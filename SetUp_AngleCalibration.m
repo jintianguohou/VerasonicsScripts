@@ -1,4 +1,5 @@
 
+%% Code Description 
 %AUTHOR: Michael Pinkert
 %DATE MODIFIED: 3/16/2017
 %DESCRIPTION: Script for calibrating the angle of the US transducer so that
@@ -14,6 +15,7 @@
 % 2) Line plot of the spatial peak pressure - Single, Updates
 % 3) Line plot of the angle of a straight line - Single, Updates
 % 4) Graph of the power spectrum - Per acquisition
+%NOMENCLATURE: Run-'GUI Instance'-'The acquisition that was run'
 
 %SOURCE: This script is a modification of 3.0.4 SetUpLSS_14v128RyLns.
 % Notice: 
@@ -39,23 +41,24 @@
 %
 % Last update:
 % 12/07/2015 - modified for SW 3.0
+% 
 
+%% File saving parameters
 clear all
-
-%File saving parameters
 %Defining the directory by date, and then by the specified folder name
 date = clock;
 dateStr = strcat(num2str(date(2)), '-', num2str(date(3)), '-',...
     num2str(date(1)));
 
-filePath = strcat('../Workspaces/', dateStr, '/');
-matName = 'AngleCalibration';
-vsxName = strcat('MatFiles/', matName);
+path = strcat('../Workspaces/', dateStr, '/');
+filePrefix = 'AngleCalibration';
+vsxName = strcat('MatFiles/', filePrefix);
 saveAcquisition = 0; %Default doesn't save
 
-runNumber = 1;
-fileNumber = 0;
+runNumber = 1; %Defaults for run and iteration number
+itNumber = 1;
 
+%% Resources, simulation, and beamforming
 
 %Start of verasonics script
 P.startDepth = 5;
@@ -122,6 +125,8 @@ Resource.DisplayWindow(1).ReferencePt = [PData(1).Origin(1),0,PData(1).Origin(3)
 Resource.DisplayWindow(1).numFrames = 20;
 Resource.DisplayWindow(1).AxesUnits = 'mm';
 Resource.DisplayWindow.Colormap = gray(256);
+
+%% Transmit and receive
 
 % Specify waveform structure array. Parameters in manual
 TW = struct('type','parametric',...
@@ -203,6 +208,7 @@ TGC.CntrlPts = [300,511,716,920,1023,1023,1023,1023]; %[0,138,260,287,385,593,67
 TGC.rangeMax = P.endDepth;
 TGC.Waveform = computeTGCWaveform(TGC);
 
+%% Image reconstruction
 % Specify reconstruction structure array. 
 Recon = struct('senscutoff', 0.6, ...
                'pdatanum', 1, ...
@@ -223,6 +229,7 @@ for j = 1:P.numRays
     ReconInfo(j).regionnum = j;
 end
 
+%% Image processing
 % Specify Process structure array.
 pers = 20;
 Process(1).classname = 'Image';
@@ -246,13 +253,13 @@ Process(1).Parameters = {'imgbufnum',1,...   % number of buffer to process.
 
 % Specify an external processing event.
 Process(2).classname = 'External';
-Process(2).method = 'saveIQData';
+Process(2).method = 'saveData';
 Process(2).Parameters = {'srcbuffer','inter',... % name of buffer to process.
 'srcbufnum',1,...
 'srcframenum',1,...
 'dstbuffer','none'};
-                                         
-                    
+                                        
+%% Sequences and events                   
 % Specify sequence control structure arrays.
 SeqControl(1).command = 'timeToNextAcq';
 SeqControl(1).argument = 200;  % 200 usec between ray lines
@@ -321,11 +328,11 @@ end
 %Event(n).process = 0; 
 %Event(n).seqControl = 4;
 
-% User specified UI Control Elements
+%% UI and EF declaration
 % - Sensitivity Cutoff
 UI(1).Control =  {'UserB7','Style','VsSlider','Label','Sens. Cutoff',...
-                  'SliderMinMaxVal',[0,1.0,Recon(1).senscutoff],...
-                  'SliderStep',[0.025,0.1],'ValueFormat','%1.3f'};
+    'SliderMinMaxVal',[0,1.0,Recon(1).senscutoff],...
+    'SliderStep',[0.025,0.1],'ValueFormat','%1.3f'};
 UI(1).Callback = text2cell('%SensCutoffCallback');
 
 % - Range Change
@@ -338,17 +345,17 @@ if isfield(Resource.DisplayWindow(1),'AxesUnits')&&~isempty(Resource.DisplayWind
     end
 end
 UI(2).Control = {'UserA1','Style','VsSlider','Label',['Range (',AxesUnit,')'],...
-                 'SliderMinMaxVal',[64,300,P.endDepth]*wls2mm,'SliderStep',[0.1,0.2],'ValueFormat','%3.0f'};
+    'SliderMinMaxVal',[64,300,P.endDepth]*wls2mm,'SliderStep',[0.1,0.2],'ValueFormat','%3.0f'};
 UI(2).Callback = text2cell('%RangeChangeCallback');
-             
+
 % - Transmit focus change
 UI(3).Control = {'UserB4','Style','VsSlider','Label',['TX Focus (',AxesUnit,')'],...
-                 'SliderMinMaxVal',[20,320,P.txFocus]*wls2mm,'SliderStep',[0.1,0.2],'ValueFormat','%3.0f'};
+    'SliderMinMaxVal',[20,320,P.txFocus]*wls2mm,'SliderStep',[0.1,0.2],'ValueFormat','%3.0f'};
 UI(3).Callback = text2cell('%TxFocusCallback');
-             
+
 % - F number change
 UI(4).Control = {'UserB3','Style','VsSlider','Label','F Number',...
-                 'SliderMinMaxVal',[1,20,round(P.txFocus/(P.numTx*Trans.spacing))],'SliderStep',[0.05,0.1],'ValueFormat','%2.0f'};
+    'SliderMinMaxVal',[1,20,round(P.txFocus/(P.numTx*Trans.spacing))],'SliderStep',[0.05,0.1],'ValueFormat','%2.0f'};
 UI(4).Callback = text2cell('%FNumCallback');
 
 
@@ -357,9 +364,13 @@ UI(4).Callback = text2cell('%FNumCallback');
 UI(5).Control = {'UserB2','Style','VsPushButton','Label','File Name'};
 UI(5).Callback = text2cell('%ChFileName');
 
-% - Save on/off button 
+% - Save on/off button
 UI(6).Control = {'UserB1','Style','VsToggleButton','Label','Save On/Off'};
 UI(6).Callback = text2cell('%SaveToggle');
+
+EF(1).Function = text2cell('%EF#1%');
+
+%% File end
 
 % Specify factor for converting sequenceRate to frameRate.
 frameRateFactor = 4;
@@ -368,15 +379,13 @@ frameRateFactor = 4;
 % the internal verasonics location for the mat file that the VSX program
 % references.  The matPath saves it to the current folder.
 save(vsxName); 
-matPath = strcat(filePath, matName);
+matPath = strcat(path, filePrefix);
 save(matPath);
 
 % filename = ('L22-14v_128RyLns'); % VSX    % permits immediately running VSX without specifying the matfile name
 return
 
-
-
-
+%% Verasonics UI functions
 %What do the UI elements do.
 % **** Callback routines to be converted by text2cell function. ****
 %SensCutoffCallback - Sensitivity cutoff change
@@ -514,7 +523,7 @@ assignin('base','Control', Control);
 return
 %FNumCallback
 
-%User created UI element code
+%% User UI and EF functions
 
 %Change the file name that gets saved to
 %ChFileName
@@ -535,3 +544,31 @@ saveAcquisition = ~saveAcquisition;
 %end
 %SaveToggle
 
+
+%EF#1%
+saveData(IQData)
+    %Read in the file path defined at the top of the file.  Retrieve the
+    %run number, the label for the set of scans being done, and the file
+    %number, the label for individual scans
+    path = evalin('base', 'filePath');
+    runNumber = evalin('base', 'runNumber');
+    itNumber = evalin('base', 'fileNumber');
+    
+    filePrefix = evalin('base', 'filePrefix');
+    dateStr = evalin('base', 'dateStr');
+    
+    path = strcat(path, filePrefix);
+    
+    %Find the current run, i.e, GUI instance
+    if exist('RunInfo.mat','File')
+        load('RunInfo.mat','lastRun');
+        runNumber = lastRun+1;
+        assignin('base', 'runNumber', runNumber);
+    end
+    
+    saveIQData(path,runNumber,itNumber,IQData);
+    
+    itNumber = fileNumber + 1;
+    assignin('base', 'fileNumber', itNumber);
+return
+%EF#1%
