@@ -357,11 +357,9 @@ UI(4).Callback = text2cell('%FNumCallback');
 UI(5).Control = {'UserB2','Style','VsPushButton','Label','File Name'};
 UI(5).Callback = text2cell('%ChFileName');
 
-% - Save on/off button
+% - Save on/off button 
 UI(6).Control = {'UserB1','Style','VsToggleButton','Label','Save On/Off'};
 UI(6).Callback = text2cell('%SaveToggle');
-
-EF(1).Function = text2cell('%EF#1%');
 
 % Specify factor for converting sequenceRate to frameRate.
 frameRateFactor = 4;
@@ -375,7 +373,6 @@ save(matPath);
 
 % filename = ('L22-14v_128RyLns'); % VSX    % permits immediately running VSX without specifying the matfile name
 return
-
 
 
 
@@ -538,48 +535,3 @@ saveAcquisition = ~saveAcquisition;
 %end
 %SaveToggle
 
-%External functions, some are implemented in the file, others in .m.
-%EF#1%
-saveIQData(TempIQData)
-
-    %Read in the file path defined at the top of the file.  Retrieve the
-    %run number, the label for the set of scans being done, and the file
-    %number, the label for individual scans
-    filePath = evalin('base', 'filePath');
-    runNumber = evalin('base', 'runNumber');
-    fileNumber = evalin('base', 'fileNumber');
-    matName = evalin('base', 'matName');
-    dateStr = evalin('base', 'dateStr');
-    
-    %The file name for this run and iteration
-    fileName = strcat(filePath,matName,'_',dateStr,'_Run-', num2str(runNumber), '_Iteration-',...
-           num2str(fileNumber), '.mat.');
-       
-    if(fileNumber == 0) %If this is the first scan of the run
-        %Make the directory if it doesn't exist.
-        directoryTest = fileName(1:find(fileName=='/','/','last'));
-        if directoryTest ~= filePath
-            if (~exist(directoryTest, 'dir'))
-                mkdir(directoryTest);
-            end
-        end
-        
-        while(exist(fileName, 'file')) %Check that the run # is correct
-            runNumber = runNumber + 1;
-            fileName = strcat(filePath, 'Run-', num2str(runNumber),...
-                '_Iteration-0.mat.');
-        end
-        assignin('base', 'runNumber', runNumber);
-    end
-    
-    
-    %Save the IQ Data
-    save(fileName, 'TempIQData')
-    
-    %Iterate the file number to save the next acquisition when freeze is
-    %clicked
-    fileNumber = fileNumber + 1;
-    assignin('base', 'fileNumber', fileNumber);
-
-return
-%EF#1%
