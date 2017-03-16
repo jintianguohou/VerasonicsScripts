@@ -45,10 +45,10 @@ clear all
 %File saving parameters
 %Defining the directory by date, and then by the specified folder name
 date = clock;
-dateStr = strcat(num2str(date(2)), '_', num2str(date(3)), '_',...
-    num2str(date(1)), '/');
+dateStr = strcat(num2str(date(2)), '-', num2str(date(3)), '-',...
+    num2str(date(1)));
 
-filePath = strcat('../Workspaces/', dateStr);
+filePath = strcat('../Workspaces/', dateStr, '/');
 matName = 'AngleCalibration';
 vsxName = strcat('MatFiles/', matName);
 saveAcquisition = 0; %Default doesn't save
@@ -525,17 +525,17 @@ prompt=({'File Name:', 'Folder:'});
 [matName, folder] = inputdlg({'Enter in the new file name:'},'File Name',1,{matName, ''});
 if folder
     filePath = strcat(filePath,folder,'/');
-    if (~exist(filePath, 'dir'))
-        mkdir(filePath);
-    end
+ %   if (~exist(filePath, 'dir'))
+   %     mkdir(filePath);
+  %  end
 end
 %ChFileName
 
 %SaveToggle
 saveAcquisition = ~saveAcquisition;
-if (~exist(filePath, 'dir'))
-   mkdir(filePath);
-end
+%if (~exist(filePath, 'dir'))
+ %  mkdir(filePath);
+%end
 %SaveToggle
 
 %External functions, some are implemented in the file, others in .m.
@@ -549,14 +549,21 @@ saveIQData(TempIQData)
     runNumber = evalin('base', 'runNumber');
     fileNumber = evalin('base', 'fileNumber');
     matName = evalin('base', 'matName');
+    dateStr = evalin('base', 'dateStr');
     
     %The file name for this run and iteration
-    fileName = strcat(filePath,matName,'_Run-', num2str(runNumber), '_Iteration-',...
+    fileName = strcat(filePath,matName,'_',dateStr,'_Run-', num2str(runNumber), '_Iteration-',...
            num2str(fileNumber), '.mat.');
        
-    %Make the directory if it doesn't exist
-
-    elseif(fileNumber == 0) %Else if this is the first scan of the run
+    if(fileNumber == 0) %If this is the first scan of the run
+        %Make the directory if it doesn't exist.
+        directoryTest = fileName(1:find(fileName=='/','/','last'));
+        if directoryTest ~= filePath
+            if (~exist(directoryTest, 'dir'))
+                mkdir(directoryTest);
+            end
+        end
+        
         while(exist(fileName, 'file')) %Check that the run # is correct
             runNumber = runNumber + 1;
             fileName = strcat(filePath, 'Run-', num2str(runNumber),...
