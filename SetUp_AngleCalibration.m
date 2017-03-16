@@ -559,12 +559,19 @@ saveData(IQData)
     
     path = strcat(path, filePrefix);
     
+    infoName = strcat(filePrefix,'RunInfo.mat');
+    
     %Find the current run, i.e, GUI instance
-    if exist('RunInfo.mat','File')
-        load('RunInfo.mat','lastRun');
+    if exist(infoName,'File')
+        load(infoName,'lastRun');
         runNumber = lastRun+1;
+        lastRun = lastRun+1;
         assignin('base', 'runNumber', runNumber);
     end
+    
+    %Save the information for the run.  Currently just the last run number,
+    %but may add to it for completeness.
+    save(infoName,lastRun);
     
     saveIQData(path,runNumber,itNumber,IQData);
     
