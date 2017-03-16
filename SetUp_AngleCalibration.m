@@ -52,11 +52,12 @@ dateStr = strcat(num2str(date(2)), '-', num2str(date(3)), '-',...
 
 path = strcat('../Workspaces/', dateStr, '/');
 filePrefix = 'AngleCalibration';
-vsxName = strcat('MatFiles/', filePrefix);
 saveAcquisition = 0; %Default doesn't save
 
 runNumber = 1; %Defaults for run and iteration number
 itNumber = 1;
+settingsNumber = 1; %Which version of the settings are you on?
+settingChanged = 1; %Whether the settings have changed since the last save.  Starts at 1 so that it doesn't automatically iterate to 2
 
 %% Resources, simulation, and beamforming
 
@@ -375,12 +376,10 @@ EF(1).Function = text2cell('%EF#1%');
 % Specify factor for converting sequenceRate to frameRate.
 frameRateFactor = 4;
 
-% Save all the structures to a .mat file.  The vsxName location saves it to
-% the internal verasonics location for the mat file that the VSX program
-% references.  The matPath saves it to the current folder.
-save(vsxName); 
-matPath = strcat(path, filePrefix);
-save(matPath);
+% Save all the structures to a .mat file.  In the currently designed
+% folder, with the current settings.
+ 
+save(strcat(path,filePrefix,'-',settingsNumber));
 
 % filename = ('L22-14v_128RyLns'); % VSX    % permits immediately running VSX without specifying the matfile name
 return
@@ -398,6 +397,16 @@ Control = evalin('base','Control');
 Control.Command = 'update&Run';
 Control.Parameters = {'Recon'};
 assignin('base','Control', Control);
+
+%Check if the settings have been changed since the save, if not, iterate
+%the settings number and turn settingsChanged on
+settingsChanged = evalin('base','settingsChanged');
+if ~settingsChanged
+    settingsNumber = evalin('base','settingsNumber');
+    assignin('base','settingsNumber',settingsNumber);
+    assignin('base','settingsChanged',settingsChanged);
+end
+
 return
 %SensCutoffCallback
 
@@ -449,6 +458,16 @@ Control.Command = 'update&Run';
 Control.Parameters = {'PData','InterBuffer','ImageBuffer','DisplayWindow','Receive','Recon'};
 assignin('base','Control', Control);
 assignin('base', 'action', 'displayChange');
+
+%Check if the settings have been changed since the save, if not, iterate
+%the settings number and turn settingsChanged on
+settingsChanged = evalin('base','settingsChanged');
+if ~settingsChanged
+    settingsNumber = evalin('base','settingsNumber');
+    assignin('base','settingsNumber',settingsNumber);
+    assignin('base','settingsChanged',settingsChanged);
+end
+
 return
 %RangeChangeCallback
 
@@ -487,6 +506,16 @@ Control = evalin('base','Control');
 Control.Command = 'update&Run';
 Control.Parameters = {'TX'};
 assignin('base','Control', Control);
+
+%Check if the settings have been changed since the save, if not, iterate
+%the settings number and turn settingsChanged on
+settingsChanged = evalin('base','settingsChanged');
+if ~settingsChanged
+    settingsNumber = evalin('base','settingsNumber');
+    assignin('base','settingsNumber',settingsNumber);
+    assignin('base','settingsChanged',settingsChanged);
+end
+
 return
 %TxFocusCallback
 
@@ -520,6 +549,16 @@ Control = evalin('base','Control');
 Control.Command = 'update&Run';
 Control.Parameters = {'TX'};
 assignin('base','Control', Control);
+
+%Check if the settings have been changed since the save, if not, iterate
+%the settings number and turn settingsChanged on
+settingsChanged = evalin('base','settingsChanged');
+if ~settingsChanged
+    settingsNumber = evalin('base','settingsNumber');
+    assignin('base','settingsNumber',settingsNumber);
+    assignin('base','settingsChanged',settingsChanged);
+end
+
 return
 %FNumCallback
 
@@ -558,8 +597,16 @@ saveData(IQData)
     dateStr = evalin('base', 'dateStr');
     
     path = strcat(path, filePrefix);
+    settingsNumber = evalin('base', 'settingsNumber');
     
-    infoName = strcat(filePrefix,'RunInfo.mat');
+    %If the settings have changed since the last time, reset the boolean to
+    %false so that new changes will trigger an iteration.
+    settingsChanged = evalin('base', 'settingsChanged');
+    if settingsChanged
+        assignin('base','settingsChanged',0);
+    end
+    
+    infoName = strcat(filePrefix,'-',settingsNumber,'_','RunInfo.mat');
     
     %Find the current run, i.e, GUI instance
     if exist(infoName,'File')
