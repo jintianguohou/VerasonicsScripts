@@ -1,7 +1,7 @@
-function IQtoRF_Verasonics(basePath, dateStr, IQData)
+function IQtoRF_Verasonics()
 %AUTHOR: Michael Pinkert
 %DATE MODIFIED: 3/16/2017
-%DESCRIPTION: Script for single frame calculation of the RF and power spectrum
+%DESCRIPTION: Script for MASS calculation of the RF and power spectrum
 %INPUT: 
 %OUTPUT:
 
@@ -19,7 +19,9 @@ end
 
 
 %STEP 2: READ THE RFD FILES AND DISPLAY THEM
-  
+
+for j=1:NumFiles
+    
     %A structre UserInput with various fields will be built below. This
     %structure is required by the function URIload to read the rfd data
     FileName=char(Name(j));
@@ -95,6 +97,7 @@ end
         save([outputDirectory '\frame_' FileName(1:end-4)],'i0','AxialPosition','LateralPosition', 'SampFreq');
         
         close all;
+end
 
 return ;
 close all

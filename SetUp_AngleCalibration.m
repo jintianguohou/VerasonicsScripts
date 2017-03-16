@@ -596,8 +596,9 @@ saveData(IQData)
     filePrefix = evalin('base', 'filePrefix');
     dateStr = evalin('base', 'dateStr');
     
-    path = strcat(path, filePrefix);
+    
     settingsNumber = evalin('base', 'settingsNumber');
+    basePath = strcat(path, filePrefix,'-',settingsNumber);
     
     %If the settings have changed since the last time, reset the boolean to
     %false so that new changes will trigger an iteration.
@@ -620,7 +621,7 @@ saveData(IQData)
     %but may add to it for completeness.
     save(infoName,lastRun);
     
-    saveIQData(path,runNumber,itNumber,IQData);
+    saveIQData(basePath,dateStr,IQData);
     
     itNumber = fileNumber + 1;
     assignin('base', 'fileNumber', itNumber);

@@ -1,8 +1,7 @@
-function saveIQData(path,runNumber,itNumber,IQData)
+function saveIQData(basePath,dateStr,IQData)
 
 %Get the final file name
-    fullPath = strcat(path,matName,'_',dateStr,'_IQ_Run-', num2str(runNumber), '-',...
-        num2str(itNumber), '.mat.');
+    fullPath = strcat(basePath,'_IQ_',dateStr,'.mat.');
 
 %Check for the directory
     directoryTest = fullPath(1:find(fullPath=='/','/','last'));
