@@ -521,11 +521,21 @@ return
 
 %Change the file name that gets saved to
 %ChFileName
-matName = inputdlg({'Enter in the new file name:'},'File Name',1,{matName});
+prompt=({'File Name:', 'Folder:'});
+[matName, folder] = inputdlg({'Enter in the new file name:'},'File Name',1,{matName, ''});
+if folder
+    filePath = strcat(filePath,folder,'/');
+    if (~exist(filePath, 'dir'))
+        mkdir(filePath);
+    end
+end
 %ChFileName
 
 %SaveToggle
-
+saveAcquisition = ~saveAcquisition;
+if (~exist(filePath, 'dir'))
+   mkdir(filePath);
+end
 %SaveToggle
 
 %External functions, some are implemented in the file, others in .m.
@@ -538,14 +548,14 @@ saveIQData(TempIQData)
     filePath = evalin('base', 'filePath');
     runNumber = evalin('base', 'runNumber');
     fileNumber = evalin('base', 'fileNumber');
+    matName = evalin('base', 'matName');
     
     %The file name for this run and iteration
-    fileName = strcat(filePath, 'Run-', num2str(runNumber), '_Iteration-',...
+    fileName = strcat(filePath,matName,'_Run-', num2str(runNumber), '_Iteration-',...
            num2str(fileNumber), '.mat.');
        
     %Make the directory if it doesn't exist
-    if (~exist(filePath, 'dir'))
-        mkdir(filePath)
+
     elseif(fileNumber == 0) %Else if this is the first scan of the run
         while(exist(fileName, 'file')) %Check that the run # is correct
             runNumber = runNumber + 1;
