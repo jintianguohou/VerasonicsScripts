@@ -45,7 +45,8 @@
 
 %% File saving parameters
 clear all
-%Defining the directory by date, and then by the specified folder name
+%Defining the directory by date, and then by the specified folder name.
+% IN THE FUTURE: Parameter for individual's name.
 date = clock;
 dateStr = strcat(num2str(date(2)), '-', num2str(date(3)), '-',...
     num2str(date(1)));
@@ -73,7 +74,7 @@ Resource.Parameters.numTransmit = 128;  % number of transmit channels.
 Resource.Parameters.numRcvChannels = 128;  % number of receive channels.
 Resource.Parameters.speedOfSound = 1540;
 Resource.Parameters.speedCorrectionFactor = 1.0;
-Resource.Parameters.simulateMode = 0;  
+Resource.Parameters.simulateMode = 1;  
 %  Resource.Parameters.simulateMode = 1 forces simulate mode, even if hardware is present.
 %  Resource.Parameters.simulateMode = 2 stops sequence and processes RcvData continuously.
 
@@ -233,6 +234,8 @@ end
 %% Image processing
 % Specify Process structure array.
 pers = 20;
+
+
 Process(1).classname = 'Image';
 Process(1).method = 'imageDisplay';
 Process(1).Parameters = {'imgbufnum',1,...   % number of buffer to process.
@@ -251,6 +254,7 @@ Process(1).Parameters = {'imgbufnum',1,...   % number of buffer to process.
                          'mappingMethod','full',...
                          'display',1,...      % display image after processing
                          'displayWindow',1};
+                     
 
 % Specify an external processing event.
 Process(2).classname = 'External';
@@ -293,7 +297,7 @@ for i = 1:Resource.RcvBuffer(1).numFrames
     Event(n).tx = 0;         % no transmit
     Event(n).rcv = 0;        % no rcv
     Event(n).recon = 1;      % reconstruction
-    Event(n).process = 1;    % process
+    Event(n).process = 1;    % process  
     if floor(i/4) == i/4     % Exit to Matlab every 4th frame reconstructed 
         Event(n).seqControl = 3;
     else
@@ -379,7 +383,7 @@ frameRateFactor = 4;
 % Save all the structures to a .mat file.  In the currently designed
 % folder, with the current settings.
  
-save(strcat(path,filePrefix,'-',settingsNumber));
+save('AngleCalibration');
 
 % filename = ('L22-14v_128RyLns'); % VSX    % permits immediately running VSX without specifying the matfile name
 return
@@ -566,20 +570,37 @@ return
 
 %Change the file name that gets saved to
 %ChFileName
-prompt=({'File Name:', 'Folder:'});
-[matName, folder] = inputdlg({'Enter in the new file name:'},'File Name',1,{matName, ''});
+
+%load variables
+filePrefix = evalin('base','filePrefix');
+path = evalin('base','path');
+
+%Dialogue box
+prompt={'File Name:', 'Folder:'};
+dlgTitle = 'Save Parameters';
+numLines = 2;
+defaultAns = {filePrefix, ''};
+userInput = inputdlg(prompt,dlgTitle,numLines,defaultAns);
+
+filePrefix = userInput{1};
+folder = userInput{2};
+
+%NO CHECKS
+assignin('base','filePrefix',filePrefix);
+
+%Check if the folder exists
 if folder
-    filePath = strcat(filePath,folder,'/');
- %   if (~exist(filePath, 'dir'))
-   %     mkdir(filePath);
-  %  end
+        assignin('base','path',strcat(path,folder,'/'));
 end
 %ChFileName
 
 %SaveToggle
+saveAcquisition = evalin('base','saveAcquisition');
 saveAcquisition = ~saveAcquisition;
-%if (~exist(filePath, 'dir'))
- %  mkdir(filePath);
+assignin('base','saveAcquisition',saveAcquisition);
+
+%if (~exist(path, 'dir'))
+ %  mkdir(path);
 %end
 %SaveToggle
 
@@ -589,7 +610,7 @@ saveData(IQData)
     %Read in the file path defined at the top of the file.  Retrieve the
     %run number, the label for the set of scans being done, and the file
     %number, the label for individual scans
-    path = evalin('base', 'filePath');
+    path = evalin('base', 'path');
     runNumber = evalin('base', 'runNumber');
     itNumber = evalin('base', 'fileNumber');
     
