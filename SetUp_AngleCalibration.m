@@ -51,7 +51,7 @@ date = clock;
 dateStr = strcat(num2str(date(2)), '-', num2str(date(3)), '-',...
     num2str(date(1)));
 
-path = strcat('../Workspaces/', dateStr, '/');
+filePath = 'C:/Users/verasonics/Documents/Ultrasound Data/';
 filePrefix = 'AngleCalibration';
 saveAcquisition = 0; %Default doesn't save
 
@@ -365,13 +365,9 @@ UI(4).Callback = text2cell('%FNumCallback');
 
 
 % Custom UI
-% - File Name Text Box
-UI(5).Control = {'UserB2','Style','VsPushButton','Label','File Name'};
-UI(5).Callback = text2cell('%ChFileName');
-
 % - Save on/off button
-UI(6).Control = {'UserB1','Style','VsToggleButton','Label','Save On/Off'};
-UI(6).Callback = text2cell('%SaveToggle');
+UI(5).Control = {'UserB1','Style','VsToggleButton','Label','Save On/Off'};
+UI(5).Callback = text2cell('%SaveToggle');
 
 EF(1).Function = text2cell('%EF#1%');
 
@@ -567,50 +563,45 @@ return
 %FNumCallback
 
 %% User UI and EF functions
-
-%Change the file name that gets saved to
-%ChFileName
-
-%load variables
-filePrefix = evalin('base','filePrefix');
-path = evalin('base','path');
-
-%Dialogue box
-prompt={'File Name:', 'Folder:'};
-dlgTitle = 'Save Parameters';
-numLines = 2;
-defaultAns = {filePrefix, ''};
-userInput = inputdlg(prompt,dlgTitle,numLines,defaultAns);
-
-filePrefix = userInput{1};
-folder = userInput{2};
-
-%NO CHECKS
-assignin('base','filePrefix',filePrefix);
-
-%Check if the folder exists
-if folder
-        assignin('base','path',strcat(path,folder,'/'));
-end
-%ChFileName
-
 %SaveToggle
+% Turns on/off saving.  Gets the base file name and destination folder if
+% saving has been turned on.
 saveAcquisition = evalin('base','saveAcquisition');
 saveAcquisition = ~saveAcquisition;
+
+if saveAcquisition
+    filePrefix = evalin('base','filePrefix');
+    filePath = evalin('base','filePath');
+
+    %Dialogue box
+    prompt={'File Name:'};
+    dlgTitle = 'Save Parameters';
+    numLines = 2;
+    defaultAns = {filePrefix};
+    userInput = inputdlg(prompt,dlgTitle,numLines,defaultAns);
+
+    filePrefix = userInput{1};
+    newFilePath = uigetdir(filePath);
+    assignin('base','filePath',newFilePath);
+
+    %NO CHECKS on the file name
+    assignin('base','filePrefix',filePrefix);
+end
+
 assignin('base','saveAcquisition',saveAcquisition);
 
-%if (~exist(path, 'dir'))
- %  mkdir(path);
+%if (~exist(filePath, 'dir'))
+ %  mkdir(filePath);
 %end
 %SaveToggle
 
 
 %EF#1%
 saveData(IQData)
-    %Read in the file path defined at the top of the file.  Retrieve the
+    %Read in the file filePath defined at the top of the file.  Retrieve the
     %run number, the label for the set of scans being done, and the file
     %number, the label for individual scans
-    path = evalin('base', 'path');
+    filePath = evalin('base', 'filePath');
     runNumber = evalin('base', 'runNumber');
     itNumber = evalin('base', 'fileNumber');
     
@@ -619,7 +610,7 @@ saveData(IQData)
     
     
     settingsNumber = evalin('base', 'settingsNumber');
-    basePath = strcat(path, filePrefix,'-',settingsNumber);
+    basefilePath = strcat(filePath, filePrefix,'-',settingsNumber);
     
     %If the settings have changed since the last time, reset the boolean to
     %false so that new changes will trigger an iteration.
@@ -642,7 +633,7 @@ saveData(IQData)
     %but may add to it for completeness.
     save(infoName,lastRun);
     
-    saveIQData(basePath,dateStr,IQData);
+    saveIQData(basefilePath,dateStr,IQData);
     
     itNumber = fileNumber + 1;
     assignin('base', 'fileNumber', itNumber);
