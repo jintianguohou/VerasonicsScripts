@@ -48,7 +48,7 @@ clear all
 %Defining the directory by date, and then by the specified folder name.
 % IN THE FUTURE: Parameter for individual's name.
 date = clock;
-dateStr = strcat('_Date-',num2str(date(2)), '-', num2str(date(3)), '-',...
+dateStr = strcat('_D-',num2str(date(2)), '-', num2str(date(3)), '-',...
     num2str(date(1)));
 
 path = 'C:/Users/verasonics/Documents/Ultrasound Data/';
@@ -672,7 +672,7 @@ saveData(IQData)
     settingsChanged = evalin('base', 'settingsChanged');
     if settingsChanged && settingsNumber == 1
         %Check for previous settings
-        while exist(strcat(path,filePrefix,settingsNumber,'.mat'), 'file')
+        while exist(strcat(path,filePrefix,'-',int2str(settingsNumber),dateStr,'.mat'), 'file')
                settingsNumber = settingsNumber+1;
         end
         assignin('base','settingsChanged',0);
@@ -686,11 +686,11 @@ saveData(IQData)
     end
 
     %Calculate the file name off of the run number and itnumber
-    fileName = strcat(filePrefix,dateStr,'_Setting-',...
-        int2str(settingsNumber),'_Run-',int2str(runNumber),'_Iteration-',int2str(itNumber))
+    fileName = strcat(path,filePrefix,'-',int2str(settingsNumber),dateStr,...
+        '_Run',int2str(runNumber),'_It',int2str(itNumber));
     
     %Save the information for the run.
-    saveIQData(path,fileName,IQData);
+    %save(strcat(path,fileName),'IQData');
     
 return
 %EF#1%
