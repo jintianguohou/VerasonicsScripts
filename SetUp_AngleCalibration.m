@@ -410,7 +410,7 @@ assignin('base','Control', Control);
 currentSettings = evalin('base','currentSettings');
 currentSettings.Control = Control;
 currentSettings.ReconL = ReconL;
-assigin('base','currentSettings',currentSettings);
+assignin('base','currentSettings',currentSettings);
 
 %Check if the settings have been changed since the save, if not, iterate
 %the settings number and turn settingsChanged on
