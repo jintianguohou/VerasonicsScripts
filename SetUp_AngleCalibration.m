@@ -633,7 +633,7 @@ saveData(IQData)
     end
 
     %Calculate the file name off of the run number and itnumber
-    fileName = strcat(filePrefix,'_S-',settingsNumber,'_R-',runNumber,'_I-',itNumber);
+    fileName = strcat(filePrefix,'_Date-',dateStr,'_Setting-',settingsNumber,'_Run-',runNumber,'_Iteration-',itNumber);
     
     %Save the information for the run.
     saveIQData(path,fileName,dateStr,IQData);

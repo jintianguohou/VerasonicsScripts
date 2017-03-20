@@ -1,4 +1,4 @@
-function saveIQData(path,fileName,dateStr,IQData)
+function saveIQData(path,fileName,IQData)
 %This function saves IQ data from a verasonics script
 %INPUTS: The destination path, a string representing the date, and the
 %frame data
@@ -6,7 +6,7 @@ function saveIQData(path,fileName,dateStr,IQData)
 %be valid.
 
 %Get the final file name
-fileName = strcat(path,fileName,'_IQ_',dateStr,'.mat.');
+fileName = strcat(path,fileName,'_IQ-Frame.mat.');
 
 %Save the IQ Data
 save(fileName, IQData)
