@@ -682,7 +682,7 @@ saveData(IQData)
             
         currentSettings = evalin('base','currentSettings');
         currentSettings.settingsNumber = settingsNumber;
-        save(strcat(path,filePrefix,int2str(settingsNumber),dateStr),'currentSettings');
+        save(strcat(path,filePrefix,'-',int2str(settingsNumber),dateStr),'currentSettings');
     end
 
     %Calculate the file name off of the run number and itnumber
