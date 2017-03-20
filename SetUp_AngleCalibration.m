@@ -48,7 +48,7 @@ clear all
 %Defining the directory by date, and then by the specified folder name.
 % IN THE FUTURE: Parameter for individual's name.
 date = clock;
-dateStr = strcat(num2str(date(2)), '-', num2str(date(3)), '-',...
+dateStr = strcat('_Date-',num2str(date(2)), '-', num2str(date(3)), '-',...
     num2str(date(1)));
 
 path = 'C:/Users/verasonics/Documents/Ultrasound Data/';
@@ -56,6 +56,7 @@ filePrefix = 'AngleCalibration';
 saveAcquisition = 0; %Default doesn't save
 
 settingsNumber = 1; %Which version of the settings are you on?
+settingsChanged = 1;
 runNumber = 1; %What run on the current setting?
 itNumber = 1; %What iteration on the current run?
 
@@ -318,14 +319,14 @@ SeqControl(nsc).command = 'sync';
 
 n = n + 1;
 
-if saveAcquisition == 1
+%if saveAcquisition == 1
     Event(n).info = 'Save image data';
     Event(n).tx = 0;
     Event(n).rcv = 0;
     Event(n).recon = 0;
     Event(n).process = 2;
     Event(n).seqControl = 0;
-end
+%end
 
 %This is the code to continuously repeat the acquisition
 %Event(n).info = 'Jump back';
@@ -378,10 +379,15 @@ EF(1).Function = text2cell('%EF#1%');
 % Specify factor for converting sequenceRate to frameRate.
 frameRateFactor = 4;
 
+%A struct of the current settings for use in passing on to the other
+%functions.  TODO: Remove any data variables
+currentSettings = RemoveGraphicHandle(ws2struct());
+
 % Save all the structures to a .mat file.  In the currently designed
 % folder, with the current settings.
- 
 save('AngleCalibration');
+
+
 
 % filename = ('L22-14v_128RyLns'); % VSX    % permits immediately running VSX without specifying the matfile name
 return
@@ -400,6 +406,12 @@ Control.Command = 'update&Run';
 Control.Parameters = {'Recon'};
 assignin('base','Control', Control);
 
+%Bring in the current settings struct so that it can be changed
+currentSettings = evalin('base','currentSettings');
+currentSettings.Control = Control;
+currentSettings.ReconL = ReconL;
+assigin('base','currentSettings',currentSettings);
+
 %Check if the settings have been changed since the save, if not, iterate
 %the settings number and turn settingsChanged on
 settingsChanged = evalin('base','settingsChanged');
@@ -412,6 +424,7 @@ end
 return
 %SensCutoffCallback
 
+
 %RangeChangeCallback - Range change
 simMode = evalin('base','Resource.Parameters.simulateMode');
 % No range change if in simulate mode 2.
@@ -419,6 +432,7 @@ if simMode == 2
     set(hObject,'Value',evalin('base','P.endDepth'));
     return
 end
+
 Trans = evalin('base','Trans');
 Resource = evalin('base','Resource');
 scaleToWvl = Trans.frequency/(Resource.Parameters.speedOfSound/1000);
@@ -444,6 +458,7 @@ for i = 1:128
     PData(1).Region(i).Shape.Position(1) = (-63.5 + (i-1))*Trans.spacing;
 end
 assignin('base','PData',PData);
+
 evalin('base','PData(1).Region = computeRegions(PData(1));');
 evalin('base','Resource.DisplayWindow(1).Position(4) = ceil(PData(1).Size(1)*PData(1).PDelta(3)/Resource.DisplayWindow(1).pdelta);');
 Receive = evalin('base', 'Receive');
@@ -460,6 +475,15 @@ Control.Command = 'update&Run';
 Control.Parameters = {'PData','InterBuffer','ImageBuffer','DisplayWindow','Receive','Recon'};
 assignin('base','Control', Control);
 assignin('base', 'action', 'displayChange');
+
+
+%Bring in the current settings struct so that it can be changed
+currentSettings = evalin('base','currentSettings');
+currentSettings.P = P;
+currentSettings.PData = PData;
+currentSettings.Receive = Receive;
+currentSettings.Control = Control;
+assignin('base','currentSettings',currentSettings);
 
 %Check if the settings have been changed since the save, if not, iterate
 %the settings number and turn settingsChanged on
@@ -480,6 +504,10 @@ if simMode == 2
     set(hObject,'Value',evalin('base','P.txFocus'));
     return
 end
+
+%Bring in the current settings struct so that it can be changed
+currentSettings = evalin('base','currentSettings');
+
 Trans = evalin('base','Trans');
 Resource = evalin('base','Resource');
 scaleToWvl = Trans.frequency/(Resource.Parameters.speedOfSound/1000);
@@ -509,6 +537,11 @@ Control.Command = 'update&Run';
 Control.Parameters = {'TX'};
 assignin('base','Control', Control);
 
+currentSettings.P = P;
+currentSettings.TX = TX;
+currentSettings.Control = Control;
+assignin('base','currentSettings',currentSettings);
+
 %Check if the settings have been changed since the save, if not, iterate
 %the settings number and turn settingsChanged on
 settingsChanged = evalin('base','settingsChanged');
@@ -530,6 +563,7 @@ if simMode == 2
     set(hObject,'Value',round(P.txFocus/(P.numTx*Trans.spacing)));
     return
 end
+
 P.txFNum = UIValue;
 P.numTx = round(P.txFocus/(P.txFNum*Trans.spacing));
 assignin('base','P',P);
@@ -551,6 +585,15 @@ Control = evalin('base','Control');
 Control.Command = 'update&Run';
 Control.Parameters = {'TX'};
 assignin('base','Control', Control);
+
+
+%Bring in the current settings struct so that it can be changed
+currentSettings = evalin('base','currentSettings');
+currentSettings.P = P;
+currentSettings.TX = TX;
+currentSettings.Control = Control;
+assignin('base','currentSettings',currentSettings');
+
 
 %Check if the settings have been changed since the save, if not, iterate
 %the settings number and turn settingsChanged on
@@ -590,6 +633,12 @@ if saveAcquisition
 else
     %Every toggle is a new run
     assignin('base','runNumber',evalin('base','runNumber')+1);
+    
+    %Bring in the current settings struct so that it can be changed
+    currentSettings = evalin('base','currentSettings');
+    currentSettings.runNumber = evalin('base','runNumber')+1;
+    assignin('base','currentSettings',currentSettings);
+    
 end
 
 assignin('base','saveAcquisition',saveAcquisition);
@@ -602,6 +651,7 @@ saveData(IQData)
     %Read in the destination directory path and file name prefix  
     path = evalin('base', 'path');
     filePrefix = evalin('base', 'filePrefix');
+    
     
     %Get the date, this just removes a few operations by passing it in
     %rather than recalculating it every time
@@ -620,23 +670,27 @@ saveData(IQData)
     %false so that new changes will propogate.  Also reset the run number
     %since it's the first run on the new settings
     settingsChanged = evalin('base', 'settingsChanged');
-    if settingsChanged
+    if settingsChanged && settingsNumber == 1
         %Check for previous settings
-        while exist(strcat(path,filePrefix,settingsNumber,'.mat'), file)
+        while exist(strcat(path,filePrefix,settingsNumber,'.mat'), 'file')
                settingsNumber = settingsNumber+1;
         end
         assignin('base','settingsChanged',0);
         assignin('base','runNumber',1);
         assignin('base','settingsNumber',settingsNumber);
         
-        evalin('base', 'save(strcat(path,filePrefix,settingsNumber,".mat"))');
+            
+        currentSettings = evalin('base','currentSettings');
+        currentSettings.settingsNumber = settingsNumber;
+        save(strcat(path,filePrefix,int2str(settingsNumber),dateStr),'currentSettings');
     end
 
     %Calculate the file name off of the run number and itnumber
-    fileName = strcat(filePrefix,'_Date-',dateStr,'_Setting-',settingsNumber,'_Run-',runNumber,'_Iteration-',itNumber);
+    fileName = strcat(filePrefix,dateStr,'_Setting-',...
+        int2str(settingsNumber),'_Run-',int2str(runNumber),'_Iteration-',int2str(itNumber))
     
     %Save the information for the run.
-    saveIQData(path,fileName,dateStr,IQData);
+    saveIQData(path,fileName,IQData);
     
 return
 %EF#1%
