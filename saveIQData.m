@@ -1,14 +1,18 @@
-function saveIQData(basePath,dateStr,IQData)
+function saveIQData(path,fileName,dateStr,IQData)
+%This function saves IQ data from a verasonics script
+%INPUTS: The destination path, a string representing the date, and the
+%frame data
+%Note: This function DOES NOT check for a valid file name.  The path should
+%be valid.
 
 %Get the final file name
-    fullPath = strcat(basePath,'_IQ_',dateStr,'.mat.');
+fileName = strcat(path,fileName,'_IQ_',dateStr,'.mat.');
 
-%Check for the directory
-    directoryTest = fullPath(1:find(fullPath=='/','/','last'));
-    if (~exist(directoryTest, 'dir'))
-            mkdir(directoryTest);
-    end
-    
+%Save the IQ Data
+save(fileName, IQData)
+
+return
+end
 % Commented out; don't think we'll run into problems with the new setup
 % unless files are moved out of their destination piecemeal
 %     while(exist(fileName, 'file')) %Check that the run # is correct
@@ -17,9 +21,3 @@ function saveIQData(basePath,dateStr,IQData)
 %             '_Iteration-0.mat');
 %     end
     
-    %Save the IQ Data
-    save(fullPath, IQData)
-
-    return
-end
-
