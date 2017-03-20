@@ -48,7 +48,7 @@ clear all
 %Defining the directory by date, and then by the specified folder name.
 % IN THE FUTURE: Parameter for individual's name.
 date = clock;
-dateStr = strcat('_D-',num2str(date(2)), '-', num2str(date(3)), '-',...
+dateStr = strcat('_',num2str(date(2)), '-', num2str(date(3)), '-',...
     num2str(date(1)));
 
 path = 'C:/Users/verasonics/Documents/Ultrasound Data/';
@@ -629,7 +629,7 @@ if saveAcquisition
     assignin('base','filePrefix',userInput{1});
     
     %Assign a new directory
-    assignin('base','path',uigetdir(path));
+    assignin('base','path',strcat(uigetdir(path),'/'));
 else
     %Every toggle is a new run
     assignin('base','runNumber',evalin('base','runNumber')+1);
@@ -648,49 +648,53 @@ assignin('base','saveAcquisition',saveAcquisition);
 
 %EF#1%
 saveData(IQData)
-    %Read in the destination directory path and file name prefix  
-    path = evalin('base', 'path');
-    filePrefix = evalin('base', 'filePrefix');
-    
-    
-    %Get the date, this just removes a few operations by passing it in
-    %rather than recalculating it every time
-    dateStr = evalin('base', 'dateStr');
-    
-    %Retrieve the current version of the setings, the run under those
-    %settings, 
-    settingsNumber = evalin('base', 'settingsNumber');
-    runNumber = evalin('base', 'runNumber');
-    itNumber = evalin('base', 'itNumber');
-    
-    %Now we want to handle the settings file, to make sure we are saving
-    %correctly
-    
-    %If the settings have changed since the last time, reset the boolean to
-    %false so that new changes will propogate.  Also reset the run number
-    %since it's the first run on the new settings
-    settingsChanged = evalin('base', 'settingsChanged');
-    if settingsChanged && settingsNumber == 1
-        %Check for previous settings
-        while exist(strcat(path,filePrefix,'-',int2str(settingsNumber),dateStr,'.mat'), 'file')
-               settingsNumber = settingsNumber+1;
-        end
-        assignin('base','settingsChanged',0);
-        assignin('base','runNumber',1);
-        assignin('base','settingsNumber',settingsNumber);
-        
-            
-        currentSettings = evalin('base','currentSettings');
-        currentSettings.settingsNumber = settingsNumber;
-        save(strcat(path,filePrefix,'-',int2str(settingsNumber),dateStr),'currentSettings');
-    end
+    saveAcquisition = evalin('base','saveAcquisition');
+    if saveAcquisition
+        %Read in the destination directory path and file name prefix
+        path = evalin('base', 'path');
+        filePrefix = evalin('base', 'filePrefix');
 
-    %Calculate the file name off of the run number and itnumber
-    fileName = strcat(path,filePrefix,'-',int2str(settingsNumber),dateStr,...
-        '_Run',int2str(runNumber),'_It',int2str(itNumber));
-    
-    %Save the information for the run.
-    %save(strcat(path,fileName),'IQData');
-    
+
+        %Get the date, this just removes a few operations by passing it in
+        %rather than recalculating it every time
+        dateStr = evalin('base', 'dateStr');
+
+        %Retrieve the current version of the setings, the run under those
+        %settings,
+        settingsNumber = evalin('base', 'settingsNumber');
+        runNumber = evalin('base', 'runNumber');
+        itNumber = evalin('base', 'itNumber');
+
+        %Now we want to handle the settings file, to make sure we are saving
+        %correctly
+
+        %If the settings have changed since the last time, reset the boolean to
+        %false so that new changes will propogate.  Also reset the run number
+        %since it's the first run on the new settings
+        settingsChanged = evalin('base', 'settingsChanged');
+        if settingsChanged && settingsNumber == 1
+            %Check for previous settings
+            while exist(strcat(path,filePrefix,'-',int2str(settingsNumber),dateStr,'.mat'), 'file')
+                settingsNumber = settingsNumber+1;
+            end
+            assignin('base','settingsChanged',0);
+            assignin('base','runNumber',1);
+            assignin('base','settingsNumber',settingsNumber);
+
+
+            currentSettings = evalin('base','currentSettings');
+            currentSettings.settingsNumber = settingsNumber;
+            save(strcat(path,filePrefix,'-',int2str(settingsNumber),dateStr),'currentSettings');
+        end
+
+        %Calculate the file name off of the run number and itnumber
+        fileName = strcat(path,filePrefix,'-',int2str(settingsNumber),dateStr,...
+            '_Run',int2str(runNumber),'_It',int2str(itNumber));
+
+        %Save the information for the run.
+
+        saveIQData(fileName,IQData);
+        %save(strcat(fileName,'_IQ-Frame'),'IQData'); %Save the IQ Data
+    end
 return
 %EF#1%
