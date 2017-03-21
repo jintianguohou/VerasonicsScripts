@@ -379,13 +379,9 @@ EF(1).Function = text2cell('%EF#1%');
 % Specify factor for converting sequenceRate to frameRate.
 frameRateFactor = 4;
 
-%A struct of the current settings for use in passing on to the other
-%functions.  TODO: Remove any data variables
-currentSettings = RemoveGraphicHandle(ws2struct());
-
 % Save all the structures to a .mat file.  In the currently designed
 % folder, with the current settings.
-save('AngleCalibration');
+save('MatFiles/AngleCalibration');
 
 
 
@@ -405,12 +401,6 @@ Control = evalin('base','Control');
 Control.Command = 'update&Run';
 Control.Parameters = {'Recon'};
 assignin('base','Control', Control);
-
-%Bring in the current settings struct so that it can be changed
-currentSettings = evalin('base','currentSettings');
-currentSettings.Control = Control;
-currentSettings.ReconL = ReconL;
-assignin('base','currentSettings',currentSettings);
 
 %Check if the settings have been changed since the save, if not, iterate
 %the settings number and turn settingsChanged on
@@ -476,15 +466,6 @@ Control.Parameters = {'PData','InterBuffer','ImageBuffer','DisplayWindow','Recei
 assignin('base','Control', Control);
 assignin('base', 'action', 'displayChange');
 
-
-%Bring in the current settings struct so that it can be changed
-currentSettings = evalin('base','currentSettings');
-currentSettings.P = P;
-currentSettings.PData = PData;
-currentSettings.Receive = Receive;
-currentSettings.Control = Control;
-assignin('base','currentSettings',currentSettings);
-
 %Check if the settings have been changed since the save, if not, iterate
 %the settings number and turn settingsChanged on
 settingsChanged = evalin('base','settingsChanged');
@@ -505,8 +486,6 @@ if simMode == 2
     return
 end
 
-%Bring in the current settings struct so that it can be changed
-currentSettings = evalin('base','currentSettings');
 
 Trans = evalin('base','Trans');
 Resource = evalin('base','Resource');
@@ -536,11 +515,6 @@ Control = evalin('base','Control');
 Control.Command = 'update&Run';
 Control.Parameters = {'TX'};
 assignin('base','Control', Control);
-
-currentSettings.P = P;
-currentSettings.TX = TX;
-currentSettings.Control = Control;
-assignin('base','currentSettings',currentSettings);
 
 %Check if the settings have been changed since the save, if not, iterate
 %the settings number and turn settingsChanged on
@@ -586,15 +560,6 @@ Control.Command = 'update&Run';
 Control.Parameters = {'TX'};
 assignin('base','Control', Control);
 
-
-%Bring in the current settings struct so that it can be changed
-currentSettings = evalin('base','currentSettings');
-currentSettings.P = P;
-currentSettings.TX = TX;
-currentSettings.Control = Control;
-assignin('base','currentSettings',currentSettings');
-
-
 %Check if the settings have been changed since the save, if not, iterate
 %the settings number and turn settingsChanged on
 settingsChanged = evalin('base','settingsChanged');
@@ -633,12 +598,7 @@ if saveAcquisition
 else
     %Every toggle is a new run
     assignin('base','runNumber',evalin('base','runNumber')+1);
-    
-    %Bring in the current settings struct so that it can be changed
-    currentSettings = evalin('base','currentSettings');
-    currentSettings.runNumber = evalin('base','runNumber')+1;
-    assignin('base','currentSettings',currentSettings);
-    
+      
 end
 
 assignin('base','saveAcquisition',saveAcquisition);
@@ -681,10 +641,24 @@ saveData(IQData)
             assignin('base','runNumber',1);
             assignin('base','settingsNumber',settingsNumber);
 
-
-            currentSettings = evalin('base','currentSettings');
-            currentSettings.settingsNumber = settingsNumber;
-            save(strcat(path,filePrefix,'-',int2str(settingsNumber),dateStr),'currentSettings');
+            preSet(1).preFix = strcat(path,filePrefix,'-',int2str(settingsNumber),dateStr);
+            preSet(1).SWversion = [3,0,7]; %This version should be changed if we ever update the software
+            preSet(1).Trans = evalin('base','trans');
+            preSet(1).TW = evalin('base','TW');
+            preSet(1).TX = evalin('base','TX');
+            preSet(1).Receive = evalin('base','Receive');
+            preSet(1).PData = evalin('base','PData');
+            preSet(1).Display = evalin('base','Display');
+            preSet(1).Recon = evalin('base','Recon');
+            preSet(1).ReconInfo = evalin('base','ReconInfo');
+            preSet(1).Process = evalin('base','Process');
+            preSet(1).P = evalin('base','P');
+            
+            %This next variable is a custom struct
+            preSet(1).TGCparam = evalin('base','TGCparam');
+            
+            
+            save(strcat(path,filePrefix,'-',int2str(settingsNumber),dateStr),'preSet');
         end
 
         %Calculate the file name off of the run number and itnumber
