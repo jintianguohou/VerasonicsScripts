@@ -585,20 +585,18 @@ saveData(IQData)
         %If the settings have changed since the last time, reset the boolean to
         %false so that new changes will propogate.  Also reset the run number
         %since it's the first run on the new settings
-        if P.settingsChanged && P.settingsNumber == 1
+        if P.itNumber == 1
             %Check for previous settings
-            while exist(strcat(P.path,P.filePrefix,'-',int2str(P.settingsNumber),P.dateStr,'.mat'), 'file')
-                P.settingsNumber = P.settingsNumber+1;
+            while exist(strcat(P.path,P.filePrefix,P.dateStr,...
+            '_Run',int2str(P.runNumber),'_It',int2str(P.itNumber),'.mat'),'file')
+                P.runNumber = P.runNumber+1;
             end
-            assignin('base','P',P);
             
-            %autoSavePreSet();
-
-            %TODO: Line to invoke save preSet here.
+           %TODO: Line to invoke save preSet here.
         end
 
         %Calculate the file name off of the run number and P.itNumber
-        fileName = strcat(P.path,P.filePrefix,'-',int2str(P.settingsNumber),P.dateStr,...
+        fileName = strcat(P.path,P.filePrefix,P.dateStr,...
             '_Run',int2str(P.runNumber),'_It',int2str(P.itNumber));
 
         %Save the information for the run.
