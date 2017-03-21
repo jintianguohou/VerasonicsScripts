@@ -600,7 +600,9 @@ if P.saveAcquisition
 else
     %Every toggle is a new run
     P.runNumber = P.runNumber +1;
-      
+    
+    %And restarts the iterations
+    P.itNumber = 1;
 end
 
 assignin('base','P',P);
@@ -628,7 +630,7 @@ saveData(IQData)
             end
             assignin('base','P',P);
             
-            savePreSet('LINK Auto Save');
+            %savePreSet('LINK Auto Save');
 
             %TODO: Line to invoke save preSet here.
         end
@@ -641,7 +643,9 @@ saveData(IQData)
         
         saveIQData(fileName,IQData); %Just save the IQ data
         
-        
+        %Modify the iteration number
+        P.itNumber = P.itNumber+1;
+        assignin('base','P',P);
     end
 return
 %EF#1%
