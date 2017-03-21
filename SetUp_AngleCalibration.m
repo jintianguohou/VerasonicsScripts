@@ -627,6 +627,8 @@ saveData(IQData)
                 P.settingsNumber = P.settingsNumber+1;
             end
             assignin('base','P',P);
+            
+            savePreSet('LINK Auto Save');
 
             %TODO: Line to invoke save preSet here.
         end
