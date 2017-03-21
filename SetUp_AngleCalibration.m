@@ -43,33 +43,34 @@
 % 12/07/2015 - modified for SW 3.0
 % 
 
-%% File saving parameters
+%% Misc workspace variables 
 clear all
 %Defining the directory by date, and then by the specified folder name.
 % IN THE FUTURE: Parameter for individual's name.
-date = clock;
-dateStr = strcat('_',num2str(date(2)), '-', num2str(date(3)), '-',...
-    num2str(date(1)));
 
-path = 'C:/Users/verasonics/Documents/Ultrasound Data/';
-filePrefix = 'AngleCalibration';
-saveAcquisition = 0; %Default doesn't save
+P.path = 'C:/Users/verasonics/Documents/Ultrasound Data/';
+P.filePrefix = 'AngleCalibration';
+P.dateStr = strcat('_',num2str(clock(2)), '-', num2str(clock(3)), '-',...
+    num2str(clock(1)));
 
-settingsNumber = 1; %Which version of the settings are you on?
-settingsChanged = 1;
-runNumber = 1; %What run on the current setting?
-itNumber = 1; %What iteration on the current run?
+P.saveAcquisition = 0; %Default doesn't save
+P.settingsNumber = 1; %Which version of the settings are you on?
+P.settingsChanged = 1; %Whether the settings have changed since the last save.  Starts at 1 so that it doesn't automatically iterate to 2
 
+P.runNumber = 1; %What run on the current setting?
+P.itNumber = 1; %What iteration on the current run?
 
-settingChanged = 1; %Whether the settings have changed since the last save.  Starts at 1 so that it doesn't automatically iterate to 2
-
-%% Resources, simulation, and beamforming
 
 %Start of verasonics script
 P.startDepth = 5;
 P.endDepth = 160;            % Acquisition depth in wavelengths
 P.txFocus = 80;  % Initial transmit focus.
 P.numRays = 128;              % no. of Rays
+
+
+%% Resources, simulation, and beamforming
+
+
 
 % Specify system parameters.
 Resource.Parameters.connector = 1;
@@ -319,7 +320,7 @@ SeqControl(nsc).command = 'sync';
 
 n = n + 1;
 
-%if saveAcquisition == 1
+%if P.saveAcquisition == 1
     Event(n).info = 'Save image data';
     Event(n).tx = 0;
     Event(n).rcv = 0;
@@ -404,11 +405,11 @@ assignin('base','Control', Control);
 
 %Check if the settings have been changed since the save, if not, iterate
 %the settings number and turn settingsChanged on
-settingsChanged = evalin('base','settingsChanged');
-if ~settingsChanged
-    settingsNumber = evalin('base','settingsNumber');
-    assignin('base','settingsNumber',settingsNumber+1);
-    assignin('base','settingsChanged',1);
+
+if ~evalin('base','P.settingsChanged')
+    settingsNumber = evalin('base','P.settingsNumber');
+    assignin('base','P.settingsNumber',settingsNumber+1);
+    assignin('base','P.settingsChanged',1);
 end
 
 return
@@ -468,11 +469,10 @@ assignin('base', 'action', 'displayChange');
 
 %Check if the settings have been changed since the save, if not, iterate
 %the settings number and turn settingsChanged on
-settingsChanged = evalin('base','settingsChanged');
-if ~settingsChanged
-    settingsNumber = evalin('base','settingsNumber');
-    assignin('base','settingsNumber',settingsNumber);
-    assignin('base','settingsChanged',1);
+if ~evalin('base','P.settingsChanged')
+    settingsNumber = evalin('base','P.settingsNumber');
+    assignin('base','P.settingsNumber',settingsNumber+1);
+    assignin('base','P.settingsChanged',1);
 end
 
 return
@@ -518,11 +518,10 @@ assignin('base','Control', Control);
 
 %Check if the settings have been changed since the save, if not, iterate
 %the settings number and turn settingsChanged on
-settingsChanged = evalin('base','settingsChanged');
-if ~settingsChanged
-    settingsNumber = evalin('base','settingsNumber');
-    assignin('base','settingsNumber',settingsNumber);
-    assignin('base','settingsChanged',1);
+if ~evalin('base','P.settingsChanged')
+    settingsNumber = evalin('base','P.settingsNumber');
+    assignin('base','P.settingsNumber',settingsNumber+1);
+    assignin('base','P.settingsChanged',1);
 end
 
 return
@@ -562,11 +561,10 @@ assignin('base','Control', Control);
 
 %Check if the settings have been changed since the save, if not, iterate
 %the settings number and turn settingsChanged on
-settingsChanged = evalin('base','settingsChanged');
-if ~settingsChanged
-    settingsNumber = evalin('base','settingsNumber');
-    assignin('base','settingsNumber',settingsNumber);
-    assignin('base','settingsChanged',1);
+if ~evalin('base','P.settingsChanged')
+    settingsNumber = evalin('base','P.settingsNumber');
+    assignin('base','P.settingsNumber',settingsNumber+1);
+    assignin('base','P.settingsChanged',1);
 end
 
 return
@@ -576,54 +574,42 @@ return
 %SaveToggle
 % Turns on/off saving.  Gets the base file name and destination folder if
 % saving has been turned on.
-saveAcquisition = evalin('base','saveAcquisition');
-saveAcquisition = ~saveAcquisition;
+P.saveAcquisition = evalin('base','P.saveAcquisition');
+P.saveAcquisition = ~P.saveAcquisition;
 
-if saveAcquisition
-    filePrefix = evalin('base','filePrefix');
-    path = evalin('base','path');
+if P.saveAcquisition
 
+    P = evalin('base','P');
+    
     %Dialogue box to make a new base file name
     prompt={'File Name:'};
     dlgTitle = 'Save Parameters';
     numLines = 2;
-    defaultAns = {filePrefix};
+    defaultAns = {P.filePrefix};
     
     %NO CHECKS on the file name
     userInput = inputdlg(prompt,dlgTitle,numLines,defaultAns);
-    assignin('base','filePrefix',userInput{1});
+    assignin('base','P.filePrefix',userInput{1});
     
     %Assign a new directory
-    assignin('base','path',strcat(uigetdir(path),'/'));
+    P.path = strcat(uigetdir(P.path),'/');
 else
     %Every toggle is a new run
-    assignin('base','runNumber',evalin('base','runNumber')+1);
+    P.runNumber = P.runNumber +1;
       
 end
 
-assignin('base','saveAcquisition',saveAcquisition);
+assignin('base','P.saveAcquisition',P.saveAcquisition);
 
 %SaveToggle
 
 
 %EF#1%
 saveData(IQData)
-    saveAcquisition = evalin('base','saveAcquisition');
-    if saveAcquisition
-        %Read in the destination directory path and file name prefix
-        path = evalin('base', 'path');
-        filePrefix = evalin('base', 'filePrefix');
-
-
-        %Get the date, this just removes a few operations by passing it in
-        %rather than recalculating it every time
-        dateStr = evalin('base', 'dateStr');
-
-        %Retrieve the current version of the setings, the run under those
-        %settings,
-        settingsNumber = evalin('base', 'settingsNumber');
-        runNumber = evalin('base', 'runNumber');
-        itNumber = evalin('base', 'itNumber');
+    
+    if evalin('base','P.saveAcquisition')
+        %Read in the misc variables struct 
+        P = evalin('base','P');
 
         %Now we want to handle the settings file, to make sure we are saving
         %correctly
@@ -631,44 +617,25 @@ saveData(IQData)
         %If the settings have changed since the last time, reset the boolean to
         %false so that new changes will propogate.  Also reset the run number
         %since it's the first run on the new settings
-        settingsChanged = evalin('base', 'settingsChanged');
-        if settingsChanged && settingsNumber == 1
+        if P.settingsChanged && P.settingsNumber == 1
             %Check for previous settings
-            while exist(strcat(path,filePrefix,'-',int2str(settingsNumber),dateStr,'.mat'), 'file')
-                settingsNumber = settingsNumber+1;
+            while exist(strcat(P.path,P.filePrefix,'-',int2str(P.settingsNumber),P.dateStr,'.mat'), 'file')
+                P.settingsNumber = P.settingsNumber+1;
             end
-            assignin('base','settingsChanged',0);
-            assignin('base','runNumber',1);
-            assignin('base','settingsNumber',settingsNumber);
+            assignin('base','P',P);
 
-            preSet(1).preFix = strcat(path,filePrefix,'-',int2str(settingsNumber),dateStr);
-            preSet(1).SWversion = [3,0,7]; %This version should be changed if we ever update the software
-            preSet(1).Trans = evalin('base','trans');
-            preSet(1).TW = evalin('base','TW');
-            preSet(1).TX = evalin('base','TX');
-            preSet(1).Receive = evalin('base','Receive');
-            preSet(1).PData = evalin('base','PData');
-            preSet(1).Display = evalin('base','Display');
-            preSet(1).Recon = evalin('base','Recon');
-            preSet(1).ReconInfo = evalin('base','ReconInfo');
-            preSet(1).Process = evalin('base','Process');
-            preSet(1).P = evalin('base','P');
-            
-            %This next variable is a custom struct
-            preSet(1).TGCparam = evalin('base','TGCparam');
-            
-            
-            save(strcat(path,filePrefix,'-',int2str(settingsNumber),dateStr),'preSet');
+            %TODO: Line to invoke save preSet here.
         end
 
-        %Calculate the file name off of the run number and itnumber
-        fileName = strcat(path,filePrefix,'-',int2str(settingsNumber),dateStr,...
-            '_Run',int2str(runNumber),'_It',int2str(itNumber));
+        %Calculate the file name off of the run number and P.itNumber
+        fileName = strcat(P.path,P.filePrefix,'-',int2str(P.settingsNumber),P.dateStr,...
+            '_Run',int2str(P.runNumber),'_It',int2str(P.itNumber));
 
         %Save the information for the run.
-
-        saveIQData(fileName,IQData);
-        %save(strcat(fileName,'_IQ-Frame'),'IQData'); %Save the IQ Data
+        
+        saveIQData(fileName,IQData); %Just save the IQ data
+        
+        
     end
 return
 %EF#1%
