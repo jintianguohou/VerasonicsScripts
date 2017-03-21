@@ -980,22 +980,23 @@ set(f,'Visible', visibility);
         cd('MatFiles')
         
         %% LINK MODIFICATION
-        if istring(varargin) && strcmp(varargin,'LINK Auto Save')
-            fileName = strcat(preSet.P.path,preSet.P.filePrefix,'-',int2str(preSet.P.settingsNumber),preSet.P.dateStr,'.mat');
-            disp(strcat('Auto-saving Preset ',fileName));
-        else
-            [fn,pn] = uiputfile('*.mat','Save preSet as',[preFix,'_preSet']);
-            if ~isequal(fn,0) % fn will be zero if user hits cancel
-                fn = strrep(fullfile(pn,fn), '''', '''''');
-                save(fn, 'preSet');
-                fprintf('The preSet has been saved at %s \n',fn);
-            else
-                disp('The preSet is not saved.');
-            end
-        end
-        
-        cd(mainFolder)
-        return
+%         if istring(varargin) && strcmp(varargin,'LINK Auto Save')
+%             fileName = strcat(preSet.P.path,preSet.P.filePrefix,'-',int2str(preSet.P.settingsNumber),preSet.P.dateStr,'.mat');
+%             disp(strcat('Auto-saving Preset ',fileName));
+%             save(fileName, P);
+%         else
+%             [fn,pn] = uiputfile('*.mat','Save preSet as',[preFix,'_preSet']);
+%             if ~isequal(fn,0) % fn will be zero if user hits cancel
+%                 fn = strrep(fullfile(pn,fn), '''', '''''');
+%                 save(fn, 'preSet');
+%                 fprintf('The preSet has been saved at %s \n',fn);
+%             else
+%                 disp('The preSet is not saved.');
+%             end
+%         end
+%         
+%         cd(mainFolder)
+%         return
     end
 
     function loadPreSet(varargin)       

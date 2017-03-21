@@ -69,7 +69,6 @@ P.endDepth = 160;            % Acquisition depth in wavelengths
 P.txFocus = 80;  % Initial transmit focus.
 P.numRays = 128;              % no. of Rays
 
-
 %% Resources, simulation, and beamforming
 
 
@@ -405,16 +404,6 @@ Control.Command = 'update&Run';
 Control.Parameters = {'Recon'};
 assignin('base','Control', Control);
 
-%Check if the settings have been changed since the save, if not, iterate
-%the settings number and turn settingsChanged on
-
-if ~evalin('base','P.settingsChanged')
-    P = evalin('base','P');
-    P.settingsNumber = P.settingsNumber+1;
-    P.settingsChanged = 1;
-    assignin('base','P');
-end
-
 return
 %SensCutoffCallback
 
@@ -470,15 +459,6 @@ Control.Parameters = {'PData','InterBuffer','ImageBuffer','DisplayWindow','Recei
 assignin('base','Control', Control);
 assignin('base', 'action', 'displayChange');
 
-%Check if the settings have been changed since the save, if not, iterate
-%the settings number and turn settingsChanged on
-if ~evalin('base','P.settingsChanged')
-    P = evalin('base','P');
-    P.settingsNumber = P.settingsNumber+1;
-    P.settingsChanged = 1;
-    assignin('base','P');
-end
-
 return
 %RangeChangeCallback
 
@@ -520,15 +500,6 @@ Control.Command = 'update&Run';
 Control.Parameters = {'TX'};
 assignin('base','Control', Control);
 
-%Check if the settings have been changed since the save, if not, iterate
-%the settings number and turn settingsChanged on
-if ~evalin('base','P.settingsChanged')
-    P = evalin('base','P');
-    P.settingsNumber = P.settingsNumber+1;
-    P.settingsChanged = 1;
-    assignin('base','P');
-end
-
 return
 %TxFocusCallback
 
@@ -563,15 +534,6 @@ Control = evalin('base','Control');
 Control.Command = 'update&Run';
 Control.Parameters = {'TX'};
 assignin('base','Control', Control);
-
-%Check if the settings have been changed since the save, if not, iterate
-%the settings number and turn settingsChanged on
-if ~evalin('base','P.settingsChanged')
-    P = evalin('base','P');
-    P.settingsNumber = P.settingsNumber+1;
-    P.settingsChanged = 1;
-    assignin('base','P');
-end
 
 return
 %FNumCallback
@@ -630,7 +592,7 @@ saveData(IQData)
             end
             assignin('base','P',P);
             
-            %savePreSet('LINK Auto Save');
+            %autoSavePreSet();
 
             %TODO: Line to invoke save preSet here.
         end
