@@ -50,8 +50,10 @@ clear all
 
 P.path = 'C:/Users/verasonics/Documents/Ultrasound Data/';
 P.filePrefix = 'AngleCalibration';
-P.dateStr = strcat('_',num2str(clock(2)), '-', num2str(clock(3)), '-',...
-    num2str(clock(1)));
+
+P.time = clock;
+P.dateStr = strcat('_',num2str(P.time(2)), '-', num2str(P.time(3)), '-',...
+    num2str(P.time(1)));
 
 P.saveAcquisition = 0; %Default doesn't save
 P.settingsNumber = 1; %Which version of the settings are you on?
@@ -407,9 +409,10 @@ assignin('base','Control', Control);
 %the settings number and turn settingsChanged on
 
 if ~evalin('base','P.settingsChanged')
-    settingsNumber = evalin('base','P.settingsNumber');
-    assignin('base','P.settingsNumber',settingsNumber+1);
-    assignin('base','P.settingsChanged',1);
+    P = evalin('base','P');
+    P.settingsNumber = P.settingsNumber+1;
+    P.settingsChanged = 1;
+    assignin('base','P');
 end
 
 return
@@ -470,9 +473,10 @@ assignin('base', 'action', 'displayChange');
 %Check if the settings have been changed since the save, if not, iterate
 %the settings number and turn settingsChanged on
 if ~evalin('base','P.settingsChanged')
-    settingsNumber = evalin('base','P.settingsNumber');
-    assignin('base','P.settingsNumber',settingsNumber+1);
-    assignin('base','P.settingsChanged',1);
+    P = evalin('base','P');
+    P.settingsNumber = P.settingsNumber+1;
+    P.settingsChanged = 1;
+    assignin('base','P');
 end
 
 return
@@ -519,9 +523,10 @@ assignin('base','Control', Control);
 %Check if the settings have been changed since the save, if not, iterate
 %the settings number and turn settingsChanged on
 if ~evalin('base','P.settingsChanged')
-    settingsNumber = evalin('base','P.settingsNumber');
-    assignin('base','P.settingsNumber',settingsNumber+1);
-    assignin('base','P.settingsChanged',1);
+    P = evalin('base','P');
+    P.settingsNumber = P.settingsNumber+1;
+    P.settingsChanged = 1;
+    assignin('base','P');
 end
 
 return
@@ -562,9 +567,10 @@ assignin('base','Control', Control);
 %Check if the settings have been changed since the save, if not, iterate
 %the settings number and turn settingsChanged on
 if ~evalin('base','P.settingsChanged')
-    settingsNumber = evalin('base','P.settingsNumber');
-    assignin('base','P.settingsNumber',settingsNumber+1);
-    assignin('base','P.settingsChanged',1);
+    P = evalin('base','P');
+    P.settingsNumber = P.settingsNumber+1;
+    P.settingsChanged = 1;
+    assignin('base','P');
 end
 
 return
@@ -574,12 +580,10 @@ return
 %SaveToggle
 % Turns on/off saving.  Gets the base file name and destination folder if
 % saving has been turned on.
-P.saveAcquisition = evalin('base','P.saveAcquisition');
+P = evalin('base','P');
 P.saveAcquisition = ~P.saveAcquisition;
 
 if P.saveAcquisition
-
-    P = evalin('base','P');
     
     %Dialogue box to make a new base file name
     prompt={'File Name:'};
@@ -589,7 +593,7 @@ if P.saveAcquisition
     
     %NO CHECKS on the file name
     userInput = inputdlg(prompt,dlgTitle,numLines,defaultAns);
-    assignin('base','P.filePrefix',userInput{1});
+    P.filePrefix = userInput{1};
     
     %Assign a new directory
     P.path = strcat(uigetdir(P.path),'/');
@@ -599,7 +603,7 @@ else
       
 end
 
-assignin('base','P.saveAcquisition',P.saveAcquisition);
+assignin('base','P',P);
 
 %SaveToggle
 
