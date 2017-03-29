@@ -1,9 +1,13 @@
 function vsx_gui
+%% Start of verasonics code
 %
 % Copyright 2001-2016 Verasonics, Inc.  All world-wide rights and remedies under all intellectual property laws and industrial property laws are reserved.  Verasonics Registered U.S. Patent and Trademark Office.
 %
 % VSX_GUI  This gui is opened by the main VSX program and allows control of various
 % acquisition and processing parameters.
+
+%This needs to be renamed to vsx_gui and put into the utilities folder to
+%work correctly and enable many parts of the script.
 
 % Close any previously opened GUI windows.
 delete(findobj('tag','UI'));
@@ -150,7 +154,7 @@ SPAll(nTGC) = 1.0;
 
 % - set sliders to positions specified in TGC.CntlPts, if it exists.
 if evalin('base','exist(''TGC'',''var'')')
-    TGC = evalin('base','TGC');
+    TGC = evalin('base','TGC'); 
     SP = double(TGC(1).CntrlPts)/1023;
 
     % if more than 1 TGC, have a dropdown menu for TGC numbers
@@ -174,7 +178,7 @@ if evalin('base','exist(''TGC'',''var'')')
     end
 end
 
-    function TGCselect(hObject,~)
+    function TGCselect(hObject,~)        
         nTGC = get(hObject,'Value');TGC = evalin('base','TGC');
         tgcValue = double(TGC(nTGC).CntrlPts)/1023;
         SP = tgcValue/SPAll(nTGC);
@@ -390,7 +394,7 @@ assignin('base','HV1maxHighVoltage',Profiles(1));
 
 % - If more than one profile, create 2nd high voltage control
 %hv2=5; % uncomment to force render.
-% Profiles(5)=50;
+Profiles(5)=50;
 if hv2 ~= 0
     Pos = UIPos(3,:,1);
     string = ['High Voltage P' num2str(hv2)];
@@ -505,7 +509,7 @@ freeze = uicontrol('Style','togglebutton',...
     'BackgroundColor',Bkgrnd+0.05,...
     'Callback',{@freeze_Callback});
 
-toolStr = {'none';'filterTool';'showTXPD';'saveRF'};
+toolStr = {'none','filterTool','showTXPD'};
 % Add the following GUI controls only if we have a DisplayWindow specification.
 if dsplywin ~= 0
     % - Zoom controls
@@ -587,7 +591,7 @@ if dsplywin ~= 0
         % Find values used in the first 'Image/imageDisplay' Process structure for displayWindow 1
         for i = 1:size(Process,2)
             if (strcmp(Process(i).classname,'Image'))&&(strcmp(Process(i).method,'imageDisplay'))
-                toolStr = {'none';'filterTool';'showTXPD';'saveRF';'PTool';'ColorMapTool'};
+                toolStr = {'none';'filterTool';'showTXPD';'PTool';'ColorMapTool'};
                 break;
             end
         end
@@ -621,7 +625,7 @@ toolsMenu = uicontrol('Style','popupmenu',...
         switch toolValue
             case 1
                 close(findobj('tag','filterTool'));
-                close(findobj('tag','TXPD'));
+                close(findobj('tag','TXPD'));                
                 close(findobj('tag','ColorMapTool'));
                 close(findobj('tag','ProcessTool'));
             case 2
@@ -629,10 +633,8 @@ toolsMenu = uicontrol('Style','popupmenu',...
             case 3
                 showTXPD
             case 4
-                saveRF;
-            case 5
                 PTool;
-            case 6
+            case 5
                 ColorMapTool;
         end
     end
@@ -644,7 +646,7 @@ preSetTxt = uicontrol('Style','text',...
     'Position',[Pos+[0.015 0.07],0.22,0.06],...
     'HorizontalAlignment','Center',...
     'FontUnits','normalized',...
-    'FontSize',0.35,...
+    'FontSize',0.35,...    
     'FontWeight','bold',...
     'Tag','preSetTxt');
 preSetSave = uicontrol('Style','pushbutton',...
@@ -661,7 +663,7 @@ preSetLoad = uicontrol('Style','pushbutton',...
     'Position',[Pos+[0.13 0.06],0.1,0.04],...
     'FontUnits','normalized',...
     'FontSize',0.5,...
-    'Tag','preSetLoad',...
+    'Tag','preSetLoad',...    
     'Callback',{@loadPreSet});
 
 % - Add Cineloop control if DisplayWindow contains more than one frame.
@@ -761,7 +763,7 @@ set(f,'Visible', visibility);
         assignin('base', 'tgc8',min(1023,1023*SP(8)*SPAll(nTGC)));
         assignin('base', 'action', 'tgc');
     end
-    function tgcAll_Callback(source,eventdata)
+    function tgcAll_Callback(source,eventdata)        
         TGCAllSldr(nTGC) = get(tgcAll,'Value');
         SPAll(nTGC) = TGCAllSldr(nTGC);
         SPAll(nTGC) = 1.05*SPAll(nTGC)*SPAll(nTGC) + 1.95*SPAll(nTGC) + 1;  % Convert to gain factor between 0.25 and 4.0
@@ -835,6 +837,7 @@ set(f,'Visible', visibility);
         assignin('base', 'action', 'pandn');
     end
 
+
 % preSet Callbacks
     function savePreSet(varargin)
         
@@ -843,10 +846,7 @@ set(f,'Visible', visibility);
             return
         else
             preFix = evalin('base','displayWindowTitle');
-            if isempty(strfind(preFix,'MatFiles'))
-                preFix = ['MatFiles/',preFix];
-            end
-        end
+        end        
         preSet.preFix = preFix;
         
         % From the VSX, Trans, Resource, TW, TX and Event are required, so
@@ -854,10 +854,10 @@ set(f,'Visible', visibility);
         
         % keep tracking the SWversion since 3.0.7
         Resource = evalin('base','Resource');
-        preSet.SWversion = Resource.SysConfig.SWversion;
+        preSet.SWversion = Resource.SysConfig.SWversion;                      
         
         % Trans, all fields are required
-        preSet.Trans = evalin('base','Trans');
+        preSet.Trans = evalin('base','Trans');        
         
         % TW and TX, remove TXPD to avoid a huge preset file size
         preSet.TW = evalin('base','TW');
@@ -866,11 +866,11 @@ set(f,'Visible', visibility);
         preSet.TX = TX;
         
         % Receive
-        if evalin('base','exist(''Receive'',''var'')')
+        if evalin('base','exist(''Receive'',''var'')')            
             preSet.Receive = evalin('base','Receive');
         end
         
-        % Image my not be reuired
+        % Image my not be reuired 
         if evalin('base','exist(''PData'',''var'')')
             preSet.PData   = evalin('base','PData');
             preSet.Display.Height  = evalin('base','Resource.DisplayWindow(1).Position(4)');
@@ -885,18 +885,17 @@ set(f,'Visible', visibility);
             % adjustment
             if evalin('base','exist(''customGamma'',''var'')')
                 preSet.Display.customGamma = evalin('base','customGamma');
-            end
-            
+            end            
         end
         
         % Recon my not be reuired
         if evalin('base','exist(''Recon'',''var'')')
             preSet.Recon   = evalin('base','Recon');
-            preSet.ReconInfo   = evalin('base','ReconInfo');
+            preSet.ReconInfo   = evalin('base','ReconInfo');            
         end
         
         % Proces may not be used
-        if evalin('base','exist(''Process'',''var'')')
+        if evalin('base','exist(''Process'',''var'')')            
             preSet.Process = evalin('base','Process');
             % if PTool has been called, compFactorAll should be saved
             if evalin('base','exist(''compFactorAll'',''var'')')
@@ -917,8 +916,8 @@ set(f,'Visible', visibility);
         if evalin('base','exist(''SFormat'',''var'')') % compatiable with old script
             preSet.SFormat = evalin('base','SFormat');
         end
-        
-        % TGC
+               
+        % TGC 
         if evalin('base','exist(''TGC'')')
             preSet.TGCparam.TGC = evalin('base','TGC');
             preSet.TGCparam.tgcAll = get(tgcAll,'Value');
@@ -941,7 +940,7 @@ set(f,'Visible', visibility);
         for i = 1:length(UI)
             if isfield(UI(i),'Control') && ~isempty(UI(i).Control)
                 
-                VsStyle = UI(i).Control{3};
+                VsStyle = UI(i).Control{3};                                
                 
                 switch VsStyle
                     case 'VsSlider'
@@ -958,8 +957,8 @@ set(f,'Visible', visibility);
                             if strcmp(get(get(UI(i).handle(1),'SelectedObject'),'tag'),get(UI(i).handle(k),'tag'))
                                 preSet.UI(i).SelectedButtonNum = k-1;
                             end
-                        end
-                end
+                        end                        
+                end                
                 
             else  % if UI.Control is empty, it's customized UIControl, not Vs- style
                 
@@ -972,39 +971,47 @@ set(f,'Visible', visibility);
                             preSet.UI(i).String = get(UI(i).handle,'String');
                     end
                 end
-            end
-        end
+            end            
+        end        
         
         assignin('base','preSet',preSet);
         
         mainFolder = pwd;
+        cd('MatFiles')
         
-        [fn,pn] = uiputfile('*.mat','Save preSet as',[preFix,'_preSet']);
-        if ~isequal(fn,0) % fn will be zero if user hits cancel
-            fn = strrep(fullfile(pn,fn), '''', '''''');
-            save(fn, 'preSet');
-            fprintf('The preSet has been saved at %s \n',fn);
-        else
-            disp('The preSet is not saved.');
-        end
-        
-        cd(mainFolder)
-        return
+        %% LINK MODIFICATION
+%         if istring(varargin) && strcmp(varargin,'LINK Auto Save')
+%             fileName = strcat(preSet.P.path,preSet.P.filePrefix,'-',int2str(preSet.P.settingsNumber),preSet.P.dateStr,'.mat');
+%             disp(strcat('Auto-saving Preset ',fileName));
+%             save(fileName, P);
+%         else
+%             [fn,pn] = uiputfile('*.mat','Save preSet as',[preFix,'_preSet']);
+%             if ~isequal(fn,0) % fn will be zero if user hits cancel
+%                 fn = strrep(fullfile(pn,fn), '''', '''''');
+%                 save(fn, 'preSet');
+%                 fprintf('The preSet has been saved at %s \n',fn);
+%             else
+%                 disp('The preSet is not saved.');
+%             end
+%         end
+%         
+%         cd(mainFolder)
+%         return
     end
 
-    function loadPreSet(varargin)
-        
-        if evalin('base','isequal(initialized,0)')
+    function loadPreSet(varargin)       
+
+        if evalin('base','isequal(initialized,0)')            
             return
-        end
-        
+        end           
+                               
         if ~ishandle(findobj('tag','UI'))
             msgbox('VSX Control does not exist');
             return
         else
             preFix = evalin('base','displayWindowTitle');
         end
-        
+               
         mainFolder = pwd;
         cd('MatFiles')
         
@@ -1017,26 +1024,25 @@ set(f,'Visible', visibility);
         end
         
         cd(mainFolder);
-        
+
         if isfield(buffer,'preSet'),
             preSet = buffer.preSet;
         else
             msgbox('There is no preSet file!');
             return
-        end
-        
-        UI = evalin('base','UI');
+        end        
+
+        UI = evalin('base','UI');        
         assignin('base','preSet',preSet);
         Resource = evalin('base','Resource');
-        
+
         % From the VSX, Trans, Resource, TW, TX and Event are required, so
-        % other structures must be checked before loading it
+        % other structures must be checked before loading it        
         
         % Check SWversion, if not, must before 3.0.7
         % if preSet has SFormat -> 2.11 version
         if isfield(preSet,'SWversion')
             newSW = 1;
-            SWversion = preSet.SWversion;
         else
             newSW = 0;
         end
@@ -1053,11 +1059,11 @@ set(f,'Visible', visibility);
         TX      = preSet.TX; assignin('base','TX',TX);
         TW      = preSet.TW; assignin('base','TW',TW);
         
-        if evalin('base','exist(''Receive'',''var'')')
+        if evalin('base','exist(''Receive'',''var'')')            
             Receive = preSet.Receive; assignin('base','Receive',Receive);
         end
         
-        % Image my not be reuired
+        % Image my not be reuired 
         if evalin('base','exist(''PData'',''var'')')
             PData   = preSet.PData; assignin('base','PData',PData);            
             if newSW
@@ -1102,31 +1108,54 @@ set(f,'Visible', visibility);
         if evalin('base','exist(''Recon'',''var'')') && newSW
             Recon     = preSet.Recon; assignin('base','Recon',Recon);
             ReconInfo = preSet.ReconInfo; assignin('base','ReconInfo',ReconInfo);
-        end
+        end        
         
         % Proces may be used
-        if evalin('base','exist(''Process'',''var'')')
+        if evalin('base','exist(''Process'',''var'')')            
             Process = preSet.Process; assignin('base','Process',Process);
             if isfield(preSet,'compFactorAll')
-                assignin('base','compFactorAll',preSet.compFactorAll);
+                assignin('base','compFactorAll',preSet.compFactorAll);            
             end
-        end
+        end              
         
         if evalin('base','exist(''SFormat'',''var'')') % compatiable with old script
             SFormat = preSet.SFormat; assignin('base','SFormat',SFormat);
         end
         
         % for Personal definition
+        
+        %% LINK addition
+        
         if evalin('base','exist(''P'',''var'')') % compatiable with old script
-            P = preSet.P; assignin('base','P',P);
+            oldP = evalin('base','P');
+            P = preSet.P;
+            
+            if isfield(oldP,'saveAcquisition') %Check for one of our custom variables
+                %Fix the time and date
+                P.time = clock;
+                P.dateStr = strcat('_',num2str(P.time(2)), '-', num2str(P.time(3)), '-',...
+                    num2str(P.time(1)));
+                
+                %Resync the save toggle button
+                if ~(P.saveAcquisition == oldP.saveAcquisition)
+                    P.saveAcquisition = oldP.saveAcquisition;
+                end
+            end
+            assignin('base','P',P);
         end
         
+        %old verasonics script
+%         if evalin('base','exist(''P'',''var'')') % compatiable with old script
+%             P = preSet.P; assignin('base','P',P);
+%         end     
+        
+        %% Back to verasonics script
         % TGC and TGC ALL
-        if evalin('base','exist(''TGC'')')
+        if evalin('base','exist(''TGC'')')            
             if newSW
                 TGC = preSet.TGCparam.TGC;
                 TGCAllSldr = preSet.TGCparam.SldrAll;
-                SPAll = preSet.TGCparam.SPAll;
+                SPAll = preSet.TGCparam.SPAll;                
             else % only the first TGC is saved in old SW, so nTGC will be 1
                 nTGC = 1;
                 set(findobj('Tag','TGCnum'),'Value',nTGC); % set TGC selection to 1, if more than 1
@@ -1158,7 +1187,7 @@ set(f,'Visible', visibility);
         
         % High Voltage 1
         hv1Volt = preSet.hv1Volt;
-        
+
         evalin('base','tStartHvSldr = tic;'); % set time the slider was moved for error suppression.
         % Attempt to set high voltage.  On error, setTpcProfileHighVoltage() returns voltage range minimum.
         [~, hvset] = setTpcProfileHighVoltage(hv1Volt,1);
@@ -1170,7 +1199,7 @@ set(f,'Visible', visibility);
         
         % High Voltage 2
         hv2Sldr = findobj('tag','hv2Sldr');
-        if ishandle(hv2Sldr)
+        if ishandle(hv2Sldr)            
             if isfield(preSet,'hv2Volt')
                 hv2Volt = preSet.hv2Volt ;
             else
@@ -1207,7 +1236,7 @@ set(f,'Visible', visibility);
         end
         
         % Speed Correction, only if Recon is defined
-        if evalin('base','exist(''Recon'',''var'')')
+        if evalin('base','exist(''Recon'',''var'')')            
             set(speedSldr,'Value',preSet.speed);
             set(speedValue,'String',num2str(preSet.speed,'%1.3f'));
             evalin('base','Resource.Parameters.speedCorrectionFactor = preSet.speed;');
@@ -1228,11 +1257,11 @@ set(f,'Visible', visibility);
             ColorMapTool;
             set(findobj('tag','ColorMapTool'),'position',posGSTool)
         end
-        
+            
         % persf and perst for Doppler, if exist
-        if evalin('base','exist(''persf'',''var'')'),
+        if evalin('base','exist(''persf'',''var'')'), 
             if newSW
-                assignin('base','persf',preSet.Doppler.persf);
+                assignin('base','persf',preSet.Doppler.persf); 
                 assignin('base','persp',preSet.Doppler.persp);
             else
                 assignin('base','persf',preSet.persf);
@@ -1253,7 +1282,7 @@ set(f,'Visible', visibility);
             Control.Parameters(end+1) = {'SFormat'};
         end
         
-        % All VsSlider and VsButtonGroup
+        % All VsSlider and VsButtonGroup        
         for i = 1:length(UI)
             
             if isfield(UI(i),'Control') && ~isempty(UI(i).Control)
@@ -1267,24 +1296,24 @@ set(f,'Visible', visibility);
                 lineNum = 1;
                 tline = fgetl(fid);
                 while ischar(tline)
-                    CBcell{lineNum,:} = tline;
+                    CBcell{lineNum,:} = tline; 
                     lineNum = lineNum +1;
                     tline = fgetl(fid);
                 end
                 fclose(fid);
                 
                 tempfile = ['tempCallback',num2str(i)];
-                CBcell = strrep(CBcell,CBfilename,tempfile);
+                CBcell = strrep(CBcell,CBfilename,tempfile);    
                 CBcell(~cellfun('isempty',strfind(CBcell,'TXPD'))) = [];
                 CBcell(~cellfun('isempty',strfind(CBcell,'waitbar'))) = [];
                 CBcell(~cellfun('isempty',strfind(CBcell,'close(h)'))) = [];
-                
+
                 fid = fopen([tempfile,'.m'],'w');
                 for j = 1:size(CBcell)
                     fprintf(fid,'%s\n', CBcell{j});
-                end
+                end                
                 fclose(fid);
-                clear CBcell;
+                clear CBcell;                              
                 
                 switch VsStyle
                     case 'VsSlider'
@@ -1295,7 +1324,8 @@ set(f,'Visible', visibility);
                                 assignin('base','action','displayChange');
                             else
                                 feval(tempfile,UI(i).handle(2));
-                            end
+                            end                            
+                            
                         else
                             error(['Incorrect preSet file! The UIcontrol at ',UI(i).Control{1},' is incorrect!']);
                         end
@@ -1305,7 +1335,7 @@ set(f,'Visible', visibility);
                         event.OldValue = UI(i).handle(1);
                         event.NewValue = UI(i).handle(oldUI(i).SelectedButtonNum+1);
                         set(UI(i).handle(1),'SelectedObject',event.NewValue);
-                        feval(tempfile,UI(i).handle(1),event);
+                        feval(tempfile,UI(i).handle(1),event);                        
                 end
                 
                 delete([tempfile,'.m']);
@@ -1334,31 +1364,21 @@ set(f,'Visible', visibility);
                 end
             end
             
-            assignin('base','Control',[]);
+            assignin('base','Control',[]); 
             evalin('base','Control.Command = [];'); % for next callback
         end
         
         % now recompute TXPD and put in workspace
-        % TXPD should be calculated based on the PData used in different
-        % Recon and ReconInfo. If the Recon is not used, TXPD should not
-        % exist and reculation is not required.
-        
-        if evalin('base','exist(''Recon'',''var'')') && newSW && isfield(oldTX,'TXPD')
+        if isfield(oldTX,'TXPD') 
+            % old software will replace the TXPD
             h = waitbar(0,'Program TX parameters, please wait!');
-            n = 1;
-            for i = 1:length(Recon)
-                TxNum = unique([ReconInfo(Recon(i).RINums(1):Recon(i).RINums(end)).txnum]);
-                PDataNum = Recon(i).pdatanum;
-                for j = 1:length(TxNum)
-                    if isfield(oldTX(j),'TXPD')
-                        TX(TxNum(j)).TXPD = computeTXPD(TX(TxNum(j)),PData(PDataNum));
-                        waitbar(n/size(TX,2));
-                        n = n+1;
-                    end
-                end
+            steps = size(TX,2);
+            for i = 1:size(TX,2)
+                TX(i).TXPD = computeTXPD(TX(i),PData);
+                waitbar(i/steps)
             end
             close(h);
-            assignin('base','TX',TX);
+            assignin('base','TX',TX);            
         end
         
         % add "set&run" to set colormap, only works in new SW
@@ -1660,7 +1680,7 @@ set(f,'Visible', visibility);
             fprintf('The cineloop has been saved at %s \n',fn);
         else
             disp('The cineloop is not saved.');
-        end
+        end               
         set(src,'Value',0);
     end
 
