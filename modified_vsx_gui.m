@@ -5,6 +5,7 @@ function vsx_gui
 % VSX_GUI  This gui is opened by the main VSX program and allows control of various
 % acquisition and processing parameters.
 
+%% GUI Initialization
 % Close any previously opened GUI windows.
 delete(findobj('tag','UI'));
 % Initialize and hide the GUI as it is being constructed.
@@ -174,6 +175,7 @@ if evalin('base','exist(''TGC'',''var'')')
     end
 end
 
+%% TGC Select
     function TGCselect(hObject,~)
         nTGC = get(hObject,'Value');TGC = evalin('base','TGC');
         tgcValue = double(TGC(nTGC).CntrlPts)/1023;
@@ -273,7 +275,7 @@ tgcAll = uicontrol(f,'Style','slider',...
     'BackgroundColor',Bkgrnd-0.05,...
     'Callback',{@tgcAll_Callback});
 
-% High Voltage slider.
+%% High Voltage slider.
 %   The slider's min and max range is determined by the limits of the Verasonics
 %   TPC and a max voltage limit that can be set in the user's setup script.
 %   A HAL call is made to get the hardware limits.  The call is safe to make
@@ -595,7 +597,7 @@ if dsplywin ~= 0
     end
 end
 
-% Tools poppumenu
+%% Tools poppumenu
 Pos = UIPos(7,:,3);
 toolsTxt = uicontrol('Style','text',...
     'String','Tools',...
@@ -717,7 +719,7 @@ set(f,'Visible', visibility);
         delete(f);
     end
 
-% TGC Callback functions
+%% TGC Callback functions
 %   The array SP keeps track of the slider positions before applying the SPAll(nTGC) gain factor.
 %   This allows returning saturated TGC sliders to original gain curve values if the SPAll(nTGC)
 %   gain is lowered.
@@ -784,19 +786,19 @@ set(f,'Visible', visibility);
         assignin('base', 'action', 'tgc');
     end
 
-% RcvData Loop Callback
+%% RcvData Loop Callback
     function rcvdataloop_Callback(source,eventdata)
         assignin('base','rloopButton',get(source,'Value'));
         assignin('base', 'action', 'rcvloop');
     end
 
-% Simulate Callback
+%% Simulate Callback
     function simulate_Callback(source,eventdata)
         assignin('base','simButton',get(source,'Value'));
         assignin('base', 'action', 'simulate');
     end
 
-% Freeze Callback
+%% Freeze Callback
     function freeze_Callback(source,eventdata)
         if evalin('base','isequal(initialized,0)')
             return
@@ -809,7 +811,7 @@ set(f,'Visible', visibility);
         end
     end
 
-% Zoom Callbacks
+%% Zoom Callbacks
     function zoomin_Callback(source,eventdata)
         assignin('base', 'action', 'zoomin');
     end
@@ -818,7 +820,7 @@ set(f,'Visible', visibility);
         assignin('base', 'action', 'zoomout');
     end
 
-% Pan Callbacks
+%% Pan Callbacks
     function panlft_Callback(source,eventdata)
         assignin('base', 'action', 'panlft');
     end
@@ -835,7 +837,7 @@ set(f,'Visible', visibility);
         assignin('base', 'action', 'pandn');
     end
 
-% preSet Callbacks
+%% save PreSet
     function savePreSet(varargin)
         
         if ~ishandle(findobj('tag','UI'))
@@ -992,6 +994,7 @@ set(f,'Visible', visibility);
         return
     end
 
+%% Load PreSet
     function loadPreSet(varargin)
         
         if evalin('base','isequal(initialized,0)')
@@ -1117,7 +1120,7 @@ set(f,'Visible', visibility);
         end
         
         
-                %% LINK addition
+        %% LINK addition
         
         if evalin('base','exist(''P'',''var'')') % compatiable with old script
             oldP = evalin('base','P');
@@ -1396,6 +1399,7 @@ set(f,'Visible', visibility);
         
     end
 
+%% High Voltage Callbacks
 % High Voltage 1 Slider Callback
     function hv1Sldr_Callback(source,eventdata,rangeGranularity)
         if (VDAS~=1)||(simMode~=0) || trackP5==1 % disable updates in these cases
@@ -1701,6 +1705,7 @@ set(f,'Visible', visibility);
         end
     end
 
+%% Script end
 % close PTool and ColorMapTool if open
 delete(findobj('tag','ProcessTool'));
 delete(findobj('tag','ColorMapTool'));
