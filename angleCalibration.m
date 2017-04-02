@@ -27,9 +27,14 @@ function angleCalibration(IQData)
            %TODO: Line to invoke save preSet here.
         end
 
-        %Calculate the file name off of the run number and P.itNumber
+        %Calculate the file name for any iteration specific file
         fileName = strcat(P.path,P.filePrefix,P.dateStr,...
             '_Run',int2str(P.runNumber),'_It',int2str(P.itNumber));
+        
+        %File name for the calibration data
+        calFileName = strcat(P.path,P.filePrefix,P.dateStr,...
+            '_Run',int2str(P.runNumber),'_CalData'); 
+
         
         %Save the IQ data for the run.
         save(strcat(fileName,'IQ'),IQData); %Save the IQ data     
@@ -74,6 +79,21 @@ function angleCalibration(IQData)
         save(strcat(fileName,'_RF'),'RF','LateralPosition','AxialPosition');
 
         %% Update the RF max and angle vectors
+        %Need to make a second/third function to actually display this info
+        maxRF = [P.maxRF, max(max(RF))];
+        
+       [lMax, lLoc] = max(RF(1,:));
+       [rMax, rLoc] = max(RF(P.Size(1),:));
+        
+        %Calculate the new angle from the leftmost and rightmost columns
+        newAngle = arctan(((lLoc-rLoc)*P.Spacing(3))/(P.Size(1)*P.Spacing(1)));
+        angles = [P.angles, newAngle];
+        
+        P.maxRF = maxRF;
+        P.angles = angles;
+        
+        save(calFileName,'maxRF','angles')
+
         %% End of code
         %Modify the iteration number
         P.itNumber = P.itNumber+1;
