@@ -1,9 +1,20 @@
-function IQtoRF_Verasonics(fileName,IQData,PDelta)
+function IQtoRF_Verasonics(fileName,IQData,ImageParameters)
 %AUTHOR: Michael Pinkert
 %DATE MODIFIED: 3/16/2017
 %DESCRIPTION: Script for single frame calculation of the RF and power
-%spectrum.
+%spectrum.  This MUST be called from within the verasonics script,
+%otherwise the evalin functions do not work.
 %INPUT: 
+%   fileName is the path, minus the file extension, to be saved at.
+%   IQData is an US frame of IQ data
+%   ImageParameters is an array that contains several different variables
+%       (1) = The wavelength in mm
+%       (2) = Lateral resolution in wavelengths
+%       (3) = Axial resolution in wavelengths
+%       (4) = Transducer center frequency in Hz
+%       (5) = Sampling frequency in Hz
+%       (6) = Transducer Element Spacing in mm
+%       (7) = Number of transducer elements
 %OUTPUT:
 
 %STEP 1: GET THE NAMES OF THE RFD DATA
@@ -12,30 +23,36 @@ QData=imag(IQData);
 Env=abs(IQData);
 Bmode=log10(Env+1);
 
+
+%Read in the variables
+Wavelength = ImageParameters(1); %Wavelength of (1.54/15.625 mm/wavelength) = .09856 mm
+LatRes = ImageParameters(2);
+AxRes = ImageParameters(3);
+SampFreq = ImageParameters(4);
+CenterFreq = ImageParameters(5);
+ElementSpacing = ImageParameters(6);
+
 [NumRows,NumCols]=size(IQData);
 
 %Position Vectors
-Wavelength = (1.54/15.625); %Wavelength of (1.54/15.625 mm/wavelength) = .09856 mm
 
-AxialPosition=[0:NumRows-1]*PDelta(3) + 5*Wavelength; %Starting depth of 5 Wavelengths
+AxialPosition=[0:NumRows-1]*AxRes + 5*Wavelength; %Starting depth of 5 Wavelengths
 
 %The following assumes a transducer spacing of 100 microns
-LateralOrigin = 0.1*(.1/Wavelength)*127/2; %To get the lateral origin, if 0 is to be the center of the image.
-LateralPosition=[0:NumCols-1].*((0.2*0.1)*(0.1/Wavelength)) - LateralOrigin; % - LateralOrigin;
+LateralOrigin = ElementSpacing*127/2; %To get the lateral origin, if 0 is to be the center of the image.
+LateralPosition=[0:NumCols-1].*((LatRes*0.1)*(0.1/Wavelength)) - LateralOrigin; % - LateralOrigin;
 
 %Re-modulation;
 
-SampFreq=62.5E6; %In Hz
 
-VirtualSamplingFactor = 1.25; %This variable adjusts for the actual axial pixel length as defined by the acquisition script
+
+VirtualSamplingFactor = (CenterFreq/SampFreq)*ImageParameters(3); %This variable adjusts for the actual axial pixel length as defined by the acquisition script
 
 Delta_t=1/SampFreq/VirtualSamplingFactor; %In Seconds
 
-fc=15.625E6*VirtualSamplingFactor; %In MegaHertz
+fc=CenterFreq*VirtualSamplingFactor; %In MegaHertz
 
-t=[0:NumRows-1]*Delta_t; %The .8 is to correct for the 1/5 wavelength pixel separation as compared to the 1/4 wavelength sampling frequency
-
-%AxialPosition=t*1540*1000;
+t=[0:NumRows-1]*Delta_t; 
 
 cosmod=cos(2*pi*fc*t);
 cosmod=repmat(cosmod',1,NumCols);
