@@ -62,8 +62,8 @@ P.settingsChanged = 1; %Whether the settings have changed since the last save.  
 P.runNumber = 1; %What run on the current setting?
 P.itNumber = 1; %What iteration on the current run?
 
-P.maxRF; %A list of the peak RF signal in the current run
-P.angles; %A list of the angles from the optical flat in the current run
+P.maxRF = []; %A list of the peak RF signal in the current run
+P.angles = []; %A list of the angles from the optical flat in the current run
 
 
 %Start of verasonics script
@@ -577,7 +577,6 @@ assignin('base','P',P);
 
 %EF#1%
 saveData(IQData)
-    
     if evalin('base','P.saveAcquisition')
         %% File Naming
         %Read in the misc variables struct 
@@ -592,7 +591,7 @@ saveData(IQData)
         if P.itNumber == 1
             %Check for previous settings
             while exist(strcat(P.path,P.filePrefix,P.dateStr,...
-            '_Run',int2str(P.runNumber),'_It',int2str(P.itNumber),'.mat'),'file')
+            '_Run',int2str(P.runNumber),'_It',int2str(P.itNumber),'_IQ.mat'),'file')
                 P.runNumber = P.runNumber+1;
             end
             
@@ -603,25 +602,109 @@ saveData(IQData)
            %TODO: Line to invoke save preSet here.
         end
 
-        %Calculate the file name off of the run number and P.itNumber
+        %Calculate the file name for any iteration specific file
         fileName = strcat(P.path,P.filePrefix,P.dateStr,...
             '_Run',int2str(P.runNumber),'_It',int2str(P.itNumber));
         
-        %% Calculate the RF frame and PS
+        %File name for the calibration data
+        calFileName = strcat(P.path,P.filePrefix,P.dateStr,...
+            '_Run',int2str(P.runNumber),'_CalData'); 
+
+        
+        %Save the IQ data for the run.
+        save(strcat(fileName,'_IQ'),'IQData'); %Save the IQ data     
+        
+       %% Save the B-mode image
        %STEP 1: Call in variables needed to define axes and position
        Trans = evalin('base','Trans');
        PData = evalin('base','PData');
        
        %STEP2: Create position vectors for each pixel in mm
        wlConversion = Trans.spacingMm/Trans.spacing; %Converting wavelengths to mm
-       AxialPosition = [0:PData.Size(3)].*(PData.PDelta(3)*wlConversion);
-        
+       LateralPosition = (0:(PData.Size(2)-1))*(PData.PDelta(1)*wlConversion) + PData.Origin(1); 
+       AxialPosition = (0:(PData.Size(1)-1))*(PData.PDelta(3)*wlConversion) + PData.Origin(3);
        
+        figure('Visible','off')
+        imagesc(LateralPosition,AxialPosition,log10(abs(IQData)+1));
+        colormap(gray);
+        axis 'equal';
+        axis 'tight';
+        xlabel('Width (mm)','FontSize',16);
+        ylabel('Depth (mm)','Fontsize',16);
+        saveas(gcf, strcat(fileName,'_BMode'),'png'); 
+        %saveas(gcf, strcat(fileName,'_BMode')); %Uncomment this line to save the actual figure 
         
+        %% Calculate and save the RF
+        
+        % Calculate parameters for re-modulation
+        VirtualSamplingFactor = 0.25/PData.PDelta(3);  %This variable adjusts for the actual axial pixel length as defined by the acquisition script
+        deltaT=1/(4*Trans.frequency*1E6*VirtualSamplingFactor); %In Seconds
+        fc=Trans.frequency*1E6*VirtualSamplingFactor; %In Hertz
+        t=(0:(PData.Size(1)-1))*deltaT; 
 
-        %Save the information for the run.
-        save(strcat(fileName,'IQ'),IQData); %Save the IQ data
+        %Perform re-modulation
+        cosmod=cos(2*pi*fc*t);
+        cosmod=repmat(cosmod',1,PData.Size(2));
         
+        sinmod=sin(2*pi*fc*t);
+        sinmod=repmat(sinmod',1,PData.Size(2));
+        
+        RF=real(IQData).*cosmod - imag(IQData).*sinmod;
+        
+        save(strcat(fileName,'_RF'),'RF','LateralPosition','AxialPosition');
+
+        %% Update the RF max and angle vectors
+        maxRF = max(max(abs(RF)));
+        
+       [lMax, lLoc] = max(abs(RF(1,:)));
+       [rMax, rLoc] = max(abs(RF(PData.Size(2),:)));
+        
+        %Calculate the new angle from the leftmost and rightmost columns
+        newAngle = atand(((lLoc-rLoc)*PData.PDelta(3))/(PData.Size(2)*PData.PDelta(1)));
+        
+        P.maxRF = [P.maxRF maxRF];
+        P.angles = [P.angles newAngle];
+        
+        C.maxRF = P.maxRF;
+        C.angles = P.angles;
+        save(calFileName,'C')
+        
+        %% Display the RF and angles in figures
+        %We need persistents so that they stay open
+        persistent calibrationGraph;
+        %X vector for the graphs based on the number of iterations
+        x = 1:P.itNumber;
+        
+        %Plot the maximum RF over iteration
+        if P.itNumber == 1
+            figure('Name','Calibration Graphs')
+            subplot(2,1,1)
+            title('Maximum RF Signal')
+            xlabel('Iteration')
+            ylabel('RF Signal')
+            plot(x,P.maxRF)
+            axis([0 (P.itNumber+1) maxRF*0.9 maxRF*1.1]);
+
+            subplot(2,1,2)
+            title('In-plane Optical Flat Angle')
+            xlabel('Iteration')
+            ylabel('RF Signal')
+            plot(x,P.angles)      
+            axis([0 (P.itNumber+1) -10 10]);
+
+        else
+        
+            subplot(2,1,1)
+            plot(x,P.maxRF)
+            axis([0 (P.itNumber+1) (min(P.maxRF)*0.9) (max(P.maxRF)*1.1)])
+
+            subplot(2,1,2)
+            plot(x,P.angles)   
+            axis([0 (P.itNumber+1) -10 10])
+
+        end
+        
+        %% End of code
         %Modify the iteration number
         P.itNumber = P.itNumber+1;
         assignin('base','P',P);

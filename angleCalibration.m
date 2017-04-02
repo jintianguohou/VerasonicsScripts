@@ -79,10 +79,10 @@ function angleCalibration(IQData)
         save(strcat(fileName,'_RF'),'RF','LateralPosition','AxialPosition');
 
         %% Update the RF max and angle vectors
-        maxRF = [P.maxRF, max(max(RF))];
+        maxRF = [P.maxRF, max(max(abs(RF)))];
         
-       [lMax, lLoc] = max(RF(1,:));
-       [rMax, rLoc] = max(RF(P.Size(1),:));
+       [lMax, lLoc] = max(abs(RF(1,:)));
+       [rMax, rLoc] = max(abs(RF(P.Size(1),:)));
         
         %Calculate the new angle from the leftmost and rightmost columns
         newAngle = arctan(((lLoc-rLoc)*P.Spacing(3))/(P.Size(1)*P.Spacing(1)));
@@ -95,18 +95,37 @@ function angleCalibration(IQData)
         
         %% Display the RF and angles in figures
         %We need persistents so that they stay open
-        persistent rfGraph;       
-        persistent angleGraph;
-        
+        persistent calibrationGraph;
         %X vector for the graphs based on the number of iterations
         x = 1:itNumber;
         
         %Plot the maximum RF over iteration
-        figure
+        if itNumber == 1
+            figure('Name','Calibration Graphs')
+            subplot(2,1,1)
+            title('Maximum RF Signal')
+            xlabel('Iteration')
+            ylabel('RF Signal')
+            axis[0 itNumber+1 0 maxRF(size(maxRF))*1.1]
+            plot(x,P.maxRF)
+
+            subplot(2,1,2)
+            title('In-plane Optical Flat Angle')
+            xlabel('Iteration')
+            ylabel('RF Signal')
+            axis[-pi/18 pi/18 -pi/18 pi/18]
+            plot(x,P.angles)      
+            
+        else
+        
+        end
         subplot(2,1,1)
-        title('Maximum RF Signal')
-        axis[0 itNumber+1 0 maxRF*1.1]
-        plot(x,rfGraph)
+        axis[0 itNumber+1 0 maxRF(size(maxRF))*1.1]
+        plot(x,P.maxRF)
+        
+        subplot(2,1,2)
+        axis[-pi/18 pi/18 -pi/18 pi/18]
+        plot(x,P.angles)
         
         
         %% End of code
