@@ -2,19 +2,12 @@
 %% Code Description 
 %AUTHOR: Michael Pinkert
 %DATE MODIFIED: 3/16/2017
-%DESCRIPTION: Script for calibrating the angle of the US transducer so that
-%it is perpendicular to the optical plane.  Please reference associated
+%DESCRIPTION: Script for saving IQ frame. Please reference associated
 %protocol for instructions on use.
 %DISPLAYS: 
 % 1) B-mode image (Native)
-% 2) Line plot of the spatial peak pressure (SpatialPeak)
-% 3) Line plot of the angle of a straight line (StraightLineAngle)
-% 4) Graph of the power spectrum (IQtoRF_AngleCalibration)
 %SAVES:
-% 1) B-mode image - Per acquisition
-% 2) Line plot of the spatial peak pressure - Single, Updates
-% 3) Line plot of the angle of a straight line - Single, Updates
-% 4) Graph of the power spectrum - Per acquisition
+% 1) IQ-Frame
 %NOMENCLATURE: Run-'GUI Instance'-'The acquisition that was run'
 
 %SOURCE: This script is a modification of 3.0.4 SetUpLSS_14v128RyLns.
