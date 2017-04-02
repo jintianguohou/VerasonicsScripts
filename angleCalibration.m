@@ -79,7 +79,6 @@ function angleCalibration(IQData)
         save(strcat(fileName,'_RF'),'RF','LateralPosition','AxialPosition');
 
         %% Update the RF max and angle vectors
-        %Need to make a second/third function to actually display this info
         maxRF = [P.maxRF, max(max(RF))];
         
        [lMax, lLoc] = max(RF(1,:));
@@ -93,7 +92,23 @@ function angleCalibration(IQData)
         P.angles = angles;
         
         save(calFileName,'maxRF','angles')
-
+        
+        %% Display the RF and angles in figures
+        %We need persistents so that they stay open
+        persistent rfGraph;       
+        persistent angleGraph;
+        
+        %X vector for the graphs based on the number of iterations
+        x = 1:itNumber;
+        
+        %Plot the maximum RF over iteration
+        figure
+        subplot(2,1,1)
+        title('Maximum RF Signal')
+        axis[0 itNumber+1 0 maxRF*1.1]
+        plot(x,rfGraph)
+        
+        
         %% End of code
         %Modify the iteration number
         P.itNumber = P.itNumber+1;
