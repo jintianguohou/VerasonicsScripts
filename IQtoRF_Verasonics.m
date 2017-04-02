@@ -43,9 +43,6 @@ LateralOrigin = ElementSpacing*127/2; %To get the lateral origin, if 0 is to be 
 LateralPosition=[0:NumCols-1].*((LatRes*0.1)*(0.1/Wavelength)) - LateralOrigin; % - LateralOrigin;
 
 %Re-modulation;
-
-
-
 VirtualSamplingFactor = (CenterFreq/SampFreq)*ImageParameters(3); %This variable adjusts for the actual axial pixel length as defined by the acquisition script
 
 Delta_t=1/SampFreq/VirtualSamplingFactor; %In Seconds
@@ -75,8 +72,8 @@ axis 'equal';
 axis 'tight';
 xlabel('Width (mm)','FontSize',16);
 ylabel('Depth (mm)','Fontsize',16);
-saveas(gcf, strcat(fileName,'_RF'),'png');
-saveas(gcf, strcat(fileName,'_RF'),'png');
+saveas(gcf, strcat(fileName,'_BMode'),'png');
+saveas(gcf, strcat(fileName,'_BMode'));
 
 figure;
 set(gca,'FontSize',16);
@@ -85,7 +82,7 @@ axis([0 31.25 -40 0]);
 xlabel('Frequency (MHz)','FontSize',16);
 ylabel('Power Spectrum (dB)','FontSize',16);
 saveas(gcf, strcat(fileName,'_PS'),'png');
-saveas(gcf, strcat(fileName,'_PS'),'png');
+saveas(gcf, strcat(fileName,'_PS'));
 
 save([outputDirectory '\frame_' FileName(1:end-4)],'i0','AxialPosition','LateralPosition', 'SampFreq');
 

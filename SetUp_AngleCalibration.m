@@ -62,6 +62,9 @@ P.settingsChanged = 1; %Whether the settings have changed since the last save.  
 P.runNumber = 1; %What run on the current setting?
 P.itNumber = 1; %What iteration on the current run?
 
+P.maxRF; %A list of the peak RF signal in the current run
+P.angles; %A list of the angles from the optical flat in the current run
+
 
 %Start of verasonics script
 P.startDepth = 5;
@@ -576,6 +579,7 @@ assignin('base','P',P);
 saveData(IQData)
     
     if evalin('base','P.saveAcquisition')
+        %% File Naming
         %Read in the misc variables struct 
         P = evalin('base','P');
 
@@ -592,12 +596,28 @@ saveData(IQData)
                 P.runNumber = P.runNumber+1;
             end
             
+            %Reset the angles and the max RF
+            P.maxRF = [];
+            P.angles = [];
+            
            %TODO: Line to invoke save preSet here.
         end
 
         %Calculate the file name off of the run number and P.itNumber
         fileName = strcat(P.path,P.filePrefix,P.dateStr,...
             '_Run',int2str(P.runNumber),'_It',int2str(P.itNumber));
+        
+        %% Calculate the RF frame and PS
+       %STEP 1: Call in variables needed to define axes and position
+       Trans = evalin('base','Trans');
+       PData = evalin('base','PData');
+       
+       %STEP2: Create position vectors for each pixel in mm
+       wlConversion = Trans.spacingMm/Trans.spacing; %Converting wavelengths to mm
+       AxialPosition = [0:PData.Size(3)].*(PData.PDelta(3)*wlConversion);
+        
+       
+        
 
         %Save the information for the run.
         save(strcat(fileName,'IQ'),IQData); %Save the IQ data

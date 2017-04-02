@@ -55,7 +55,7 @@ for j=1:NumFiles
         
         Delta_t=1/SampFreq/VirtualSamplingFactor; %In Seconds 
 
-        fc=15.625E6*VirtualSamplingFactor; %In MegaHertz
+        fc=15.625E6*VirtualSamplingFactor; %In Hertz
 
         t=[0:NumRows-1]*Delta_t; %The .8 is to correct for the 1/5 wavelength pixel separation as compared to the 1/4 wavelength sampling frequency
         
