@@ -65,6 +65,8 @@ P.itNumber = 1; %What iteration on the current run?
 P.maxRF = []; %A list of the peak RF signal in the current run
 P.angles = []; %A list of the angles from the optical flat in the current run
 
+P.rfHandle = 1; %Handle for the RF figure
+P.angleHandle = []; %Handle for the angle figure
 
 %Start of verasonics script
 P.startDepth = 5;
@@ -671,37 +673,54 @@ saveData(IQData)
         
         %% Display the RF and angles in figures
         %We need persistents so that they stay open
-        persistent calibrationGraph;
+        persistent rfGraph;
+        persistent angleGraph;
+
         %X vector for the graphs based on the number of iterations
         x = 1:P.itNumber;
         
         %Plot the maximum RF over iteration
         if P.itNumber == 1
-            figure('Name','Calibration Graphs')
-            subplot(2,1,1)
+            while ishandle(P.rfHandle) && strcmp(get(P.rfHandle,'type'),'figure')
+                P.rfHandle = P.rfHandle+1;
+            end
+            figure(P.rfHandle)
+            set(figure(P.rfHandle),'Name',strcat('Run-',num2str(P.runNumber)),'NumberTitle','off')
+            rfGraph = axes('XLim',[0,(P.itNumber+1)],...
+                'YLim', [maxRF*0.9,maxRF*1.1],...
+                'NextPlot','replaceChildren');
+            plot(rfGraph,x,P.maxRF,'-o')
             title('Maximum RF Signal')
             xlabel('Iteration')
             ylabel('RF Signal')
-            plot(x,P.maxRF)
-            axis([0 (P.itNumber+1) maxRF*0.9 maxRF*1.1]);
-
-            subplot(2,1,2)
-            title('In-plane Optical Flat Angle')
+            drawnow
+            
+            P.angleHandle = P.rfHandle+1;
+            while ishandle(P.angleHandle) && strcmp(get(P.angleHandle,'type'),'figure')
+                P.angleHandle = P.angleHandle+1;
+            end
+            figure(P.angleHandle)
+            set(figure(P.angleHandle),'Name',strcat('Run-',num2str(P.runNumber)),'NumberTitle','off')
+            angleGraph = axes('XLim',[0,(P.itNumber+1)],...
+                'YLim', [-10, 10],...
+                'NextPlot','replaceChildren');
+            plot(angleGraph,x,P.angles,'-o')
+            title('Optical Flat Angle')
             xlabel('Iteration')
-            ylabel('RF Signal')
-            plot(x,P.angles)      
-            axis([0 (P.itNumber+1) -10 10]);
+            ylabel('Angle')
 
+            drawnow
         else
         
-            subplot(2,1,1)
-            plot(x,P.maxRF)
-            axis([0 (P.itNumber+1) (min(P.maxRF)*0.9) (max(P.maxRF)*1.1)])
-
-            subplot(2,1,2)
-            plot(x,P.angles)   
-            axis([0 (P.itNumber+1) -10 10])
-
+            figure(P.rfHandle)
+            set(rfGraph,'XLim',[0 P.itNumber+1],'YLim',[(min(P.maxRF)*0.9) (max(P.maxRF)*1.1)]);
+            plot(rfGraph,x,C.maxRF,'-o')
+            drawnow
+            
+            figure(P.angleHandle)
+            set(angleGraph,'XLim',[0 P.itNumber+1]);
+            plot(angleGraph,x,C.angles,'-o')
+            drawnow
         end
         
         %% End of code
