@@ -593,7 +593,7 @@ saveData(IQData)
         if P.itNumber == 1
             %Check for previous settings
             while exist(strcat(P.path,P.filePrefix,P.dateStr,...
-            '_Run',int2str(P.runNumber),'_It',int2str(P.itNumber),'_IQ.mat'),'file')
+            '_Run-',int2str(P.runNumber),'_It-',int2str(P.itNumber),'_IQ.mat'),'file')
                 P.runNumber = P.runNumber+1;
             end
             
@@ -606,11 +606,11 @@ saveData(IQData)
 
         %Calculate the file name for any iteration specific file
         fileName = strcat(P.path,P.filePrefix,P.dateStr,...
-            '_Run',int2str(P.runNumber),'_It',int2str(P.itNumber));
+            '_Run-',int2str(P.runNumber),'_It-',int2str(P.itNumber));
         
         %File name for the calibration data
         calFileName = strcat(P.path,P.filePrefix,P.dateStr,...
-            '_Run',int2str(P.runNumber),'_CalData'); 
+            '_Run-',int2str(P.runNumber),'_CalData'); 
 
         
         %Save the IQ data for the run.
@@ -681,6 +681,7 @@ saveData(IQData)
         
         %Plot the maximum RF over iteration
         if P.itNumber == 1
+            %Get a new handle for the figure, makes a figure per run
             while ishandle(P.rfHandle) && strcmp(get(P.rfHandle,'type'),'figure')
                 P.rfHandle = P.rfHandle+1;
             end
@@ -722,6 +723,16 @@ saveData(IQData)
             plot(angleGraph,x,C.angles,'-o')
             drawnow
         end
+        
+        %Save the figures, overwriting by iteration
+        rfName = strcat(P.path,P.filePrefix,P.dateStr,...
+            '_Run-',int2str(P.runNumber),'_rfGraph');
+        
+        angleName = strcat(P.path,P.filePrefix,P.dateStr,...
+            '_Run-',int2str(P.runNumber),'_angleGraph');
+        
+        saveas(figure(P.rfHandle),rfName,'png')
+        saveas(figure(P.angleHandle),angleName,'png')
         
         %% End of code
         %Modify the iteration number
