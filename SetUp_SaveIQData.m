@@ -42,7 +42,7 @@ clear all
 % IN THE FUTURE: Parameter for individual's name.
 
 P.path = 'C:/Users/verasonics/Documents/Ultrasound Data/';
-P.filePrefix = 'AngleCalibration';
+P.filePrefix = 'SaveIQData';
 
 P.time = clock;
 P.dateStr = strcat('_',num2str(P.time(2)), '-', num2str(P.time(3)), '-',...
@@ -569,6 +569,7 @@ assignin('base','P',P);
 saveData(IQData)
     
     if evalin('base','P.saveAcquisition')
+                %% File Naming and IQ data
         %Read in the misc variables struct 
         P = evalin('base','P');
 
@@ -581,19 +582,19 @@ saveData(IQData)
         if P.itNumber == 1
             %Check for previous settings
             while exist(strcat(P.path,P.filePrefix,P.dateStr,...
-            '_Run',int2str(P.runNumber),'_It',int2str(P.itNumber),'.mat'),'file')
+            '_Run-',int2str(P.runNumber),'_It-',int2str(P.itNumber),'_IQ.mat'),'file')
                 P.runNumber = P.runNumber+1;
             end
             
            %TODO: Line to invoke save preSet here.
         end
 
-        %Calculate the file name off of the run number and P.itNumber
+        %Calculate the file name for any iteration specific file
         fileName = strcat(P.path,P.filePrefix,P.dateStr,...
-            '_Run',int2str(P.runNumber),'_It',int2str(P.itNumber));
-
-        %Save the information for the run.
-        save(strcat(fileName,'IQ'),IQData); %Save the IQ data
+            '_Run-',int2str(P.runNumber),'_It-',int2str(P.itNumber));
+        
+        %Save the IQ data for the run.
+        save(strcat(fileName,'_IQ'),'IQData'); %Save the IQ data     
         
         %Modify the iteration number
         P.itNumber = P.itNumber+1;

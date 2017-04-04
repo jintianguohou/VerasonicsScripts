@@ -62,10 +62,14 @@ P.settingsChanged = 1; %Whether the settings have changed since the last save.  
 P.runNumber = 1; %What run on the current setting?
 P.itNumber = 1; %What iteration on the current run?
 
+P.axialWindow = 40; %Window around the focus for the power spectrum, sized in wavelengths
+P.powerSpectra = [];
+
 P.maxRF = []; %A list of the peak RF signal in the current run
 P.angles = []; %A list of the angles from the optical flat in the current run
 
-P.rfHandle = 1; %Handle for the RF figure
+P.psHandle = 1;
+P.rfHandle = []; %Handle for the RF figure
 P.angleHandle = []; %Handle for the angle figure
 
 %Start of verasonics script
@@ -351,21 +355,21 @@ UI(1).Control =  {'UserB7','Style','VsSlider','Label','Sens. Cutoff',...
 UI(1).Callback = text2cell('%SensCutoffCallback');
 
 % - Range Change
-wls2mm = 1;
+P.wls2mm = 1;
 AxesUnit = 'wls';
 if isfield(Resource.DisplayWindow(1),'AxesUnits')&&~isempty(Resource.DisplayWindow(1).AxesUnits)
     if strcmp(Resource.DisplayWindow(1).AxesUnits,'mm');
         AxesUnit = 'mm';
-        wls2mm = Resource.Parameters.speedOfSound/1000/Trans.frequency;
+        P.wls2mm = Resource.Parameters.speedOfSound/1000/Trans.frequency;
     end
 end
 UI(2).Control = {'UserA1','Style','VsSlider','Label',['Range (',AxesUnit,')'],...
-    'SliderMinMaxVal',[64,300,P.endDepth]*wls2mm,'SliderStep',[0.1,0.2],'ValueFormat','%3.0f'};
+    'SliderMinMaxVal',[64,300,P.endDepth]*P.wls2mm,'SliderStep',[0.1,0.2],'ValueFormat','%3.0f'};
 UI(2).Callback = text2cell('%RangeChangeCallback');
 
 % - Transmit focus change
 UI(3).Control = {'UserB4','Style','VsSlider','Label',['TX Focus (',AxesUnit,')'],...
-    'SliderMinMaxVal',[20,320,P.txFocus]*wls2mm,'SliderStep',[0.1,0.2],'ValueFormat','%3.0f'};
+    'SliderMinMaxVal',[20,320,P.txFocus]*P.wls2mm,'SliderStep',[0.1,0.2],'ValueFormat','%3.0f'};
 UI(3).Callback = text2cell('%TxFocusCallback');
 
 % - F number change
@@ -580,7 +584,7 @@ assignin('base','P',P);
 %EF#1%
 saveData(IQData)
     if evalin('base','P.saveAcquisition')
-        %% File Naming
+        %% File Naming and IQ data
         %Read in the misc variables struct 
         P = evalin('base','P');
 
@@ -608,10 +612,7 @@ saveData(IQData)
         fileName = strcat(P.path,P.filePrefix,P.dateStr,...
             '_Run-',int2str(P.runNumber),'_It-',int2str(P.itNumber));
         
-        %File name for the calibration data
-        calFileName = strcat(P.path,P.filePrefix,P.dateStr,...
-            '_Run-',int2str(P.runNumber),'_CalData'); 
-
+  
         
         %Save the IQ data for the run.
         save(strcat(fileName,'_IQ'),'IQData'); %Save the IQ data     
@@ -622,9 +623,8 @@ saveData(IQData)
        PData = evalin('base','PData');
        
        %STEP2: Create position vectors for each pixel in mm
-       wlConversion = Trans.spacingMm/Trans.spacing; %Converting wavelengths to mm
-       LateralPosition = (0:(PData.Size(2)-1))*(PData.PDelta(1)*wlConversion) + PData.Origin(1); 
-       AxialPosition = (0:(PData.Size(1)-1))*(PData.PDelta(3)*wlConversion) + PData.Origin(3);
+       LateralPosition = (0:(PData.Size(2)-1))*(PData.PDelta(1)*P.wls2mm) + PData.Origin(1); 
+       AxialPosition = (0:(PData.Size(1)-1))*(PData.PDelta(3)*P.wls2mm) + PData.Origin(3);
        
         figure('Visible','off')
         imagesc(LateralPosition,AxialPosition,log10(abs(IQData)+1));
@@ -655,7 +655,26 @@ saveData(IQData)
         
         save(strcat(fileName,'_RF'),'RF','LateralPosition','AxialPosition');
 
+        %% Calculate and save the power spectrum
+        halfAxWindow = int16(0.5*P.axialWindow/PData.PDelta(3)); %Axial window in pixels.
+        focusIdx = int16(P.txFocus/PData.PDelta(3)); % location of the tx focus in the array
+        
+        %Make sure the window is possible
+        if (focusIdx-halfAxWindow) < 1 %Check that the window stops at the lower bound
+            halfAxWindow = focusIdx - 1;
+        end
+        
+        if (focusIdx + halfAxWindow) > PData.Size(1) %Check that the window stops at the upper bound
+            halfAxWindow = PData.Size(1)-focusIdx;
+        end
+        
+        [E, V] = dpss(2*halfAxWindow+1,1);
+        [powerSpectrum, frequencies] = PowerSpectrumMTF2(...
+            RF((focusIdx-halfAxWindow):(focusIdx+halfAxWindow),:), E,V,4*Trans.frequency);
+        P.powerSpectra = [P.powerSpectra powerSpectrum];
+        
         %% Update the RF max and angle vectors
+        
         maxRF = max(max(abs(RF)));
         
        [lMax, lLoc] = max(abs(RF(1,:)));
@@ -667,14 +686,22 @@ saveData(IQData)
         P.maxRF = [P.maxRF maxRF];
         P.angles = [P.angles newAngle];
         
+        
+        %File name for the calibration data
+        calFileName = strcat(P.path,P.filePrefix,P.dateStr,...
+            '_Run-',int2str(P.runNumber),'_CalData'); 
+       
+        %Set up a calibration file
         C.maxRF = P.maxRF;
         C.angles = P.angles;
+        C.powerSpectra = P.powerSpectra;
         save(calFileName,'C')
         
         %% Display the RF and angles in figures
         %We need persistents so that they stay open
         persistent rfGraph;
         persistent angleGraph;
+        persistent psGraph;
 
         %X vector for the graphs based on the number of iterations
         x = 1:P.itNumber;
@@ -682,9 +709,26 @@ saveData(IQData)
         %Plot the maximum RF over iteration
         if P.itNumber == 1
             %Get a new handle for the figure, makes a figure per run
-            while ishandle(P.rfHandle) && strcmp(get(P.rfHandle,'type'),'figure')
-                P.rfHandle = P.rfHandle+1;
+            while ishandle(P.psHandle) && strcmp(get(P.psHandle,'type'),'figure')
+                P.psHandle = P.psHandle+1;
             end
+            
+            %Power spectrum graph
+            figure(P.psHandle)
+            set(figure(P.psHandle),'Name',strcat('Run-',num2str(P.runNumber)...
+                ,'_It-',num2str(P.itNumber))...
+                ,'NumberTitle','off')
+            psGraph = axes('XLim',[0,max(frequencies)],...
+                'YLim', [-40 0],...
+                'NextPlot','replaceChildren');
+            plot(psGraph,frequencies,10*log10(powerSpectrum/max(powerSpectrum)))
+            xlabel('Frequency (MHz)')
+            ylabel('Transducer Response (dB)')
+            title('Power Spectrum')
+            drawnow
+                       
+            %Maximum RF Line graph
+            P.rfHandle = P.psHandle + 1;
             figure(P.rfHandle)
             set(figure(P.rfHandle),'Name',strcat('Run-',num2str(P.runNumber)),'NumberTitle','off')
             rfGraph = axes('XLim',[0,(P.itNumber+1)],...
@@ -696,6 +740,7 @@ saveData(IQData)
             ylabel('RF Signal')
             drawnow
             
+            %Optical flat angle graph
             P.angleHandle = P.rfHandle+1;
             while ishandle(P.angleHandle) && strcmp(get(P.angleHandle,'type'),'figure')
                 P.angleHandle = P.angleHandle+1;
@@ -712,17 +757,26 @@ saveData(IQData)
 
             drawnow
         else
-        
+            %Update the power spectrum figure
+            figure(P.psHandle)
+            plot(psGraph, frequencies, 10*log10(powerSpectrum/max(powerSpectrum)))
+            drawnow
+            
+            %Update the RF line plot
             figure(P.rfHandle)
             set(rfGraph,'XLim',[0 P.itNumber+1],'YLim',[(min(P.maxRF)*0.9) (max(P.maxRF)*1.1)]);
             plot(rfGraph,x,C.maxRF,'-o')
             drawnow
             
+            %Update the Angle line plot
             figure(P.angleHandle)
             set(angleGraph,'XLim',[0 P.itNumber+1]);
             plot(angleGraph,x,C.angles,'-o')
             drawnow
         end
+        
+        %Save the power spectrum
+        saveas(figure(P.psHandle),strcat(fileName,'_PS'),'png')
         
         %Save the figures, overwriting by iteration
         rfName = strcat(P.path,P.filePrefix,P.dateStr,...
