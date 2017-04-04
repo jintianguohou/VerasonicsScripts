@@ -669,7 +669,7 @@ saveData(IQData)
         end
         
         [E, V] = dpss(2*halfAxWindow+1,1);
-        [powerSpectrum, frequencies] = PowerSpectrumMTF2(...
+        [powerSpectrum, C.frequencies] = PowerSpectrumMTF2(...
             RF((focusIdx-halfAxWindow):(focusIdx+halfAxWindow),:), E,V,4*Trans.frequency);
         P.powerSpectra = [P.powerSpectra powerSpectrum];
         
@@ -718,10 +718,10 @@ saveData(IQData)
             set(figure(P.psHandle),'Name',strcat('Run-',num2str(P.runNumber)...
                 ,'_It-',num2str(P.itNumber))...
                 ,'NumberTitle','off')
-            psGraph = axes('XLim',[0,max(frequencies)],...
+            psGraph = axes('XLim',[0,max(C.frequencies)],...
                 'YLim', [-40 0],...
                 'NextPlot','replaceChildren');
-            plot(psGraph,frequencies,10*log10(powerSpectrum/max(powerSpectrum)))
+            plot(psGraph,C.frequencies,10*log10(powerSpectrum/max(powerSpectrum)))
             xlabel('Frequency (MHz)')
             ylabel('Transducer Response (dB)')
             title('Power Spectrum')
@@ -759,7 +759,7 @@ saveData(IQData)
         else
             %Update the power spectrum figure
             figure(P.psHandle)
-            plot(psGraph, frequencies, 10*log10(powerSpectrum/max(powerSpectrum)))
+            plot(psGraph, C.frequencies, 10*log10(powerSpectrum/max(powerSpectrum)))
             drawnow
             
             %Update the RF line plot
