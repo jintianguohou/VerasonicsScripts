@@ -15,7 +15,9 @@
 % 2) Line plot of the spatial peak pressure - Single, Updates
 % 3) Line plot of the angle of a straight line - Single, Updates
 % 4) Graph of the power spectrum - Per acquisition
-%NOMENCLATURE: Run-'GUI Instance'-'The acquisition that was run'
+% 5) Calibration data containing the line plots and the power spectrum in
+% .m form.
+%NOMENCLATURE: FileName_Date_Run-'GUI Instance'-It-'The acquisition that was run'
 
 %SOURCE: This script is a modification of 3.0.4 SetUpLSS_14v128RyLns.
 % Notice: 

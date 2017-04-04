@@ -7,15 +7,13 @@
 %protocol for instructions on use.
 %DISPLAYS: 
 % 1) B-mode image (Native)
-% 2) Line plot of the spatial peak pressure (SpatialPeak)
-% 3) Line plot of the angle of a straight line (StraightLineAngle)
-% 4) Graph of the power spectrum (IQtoRF_AngleCalibration)
+% 2) Graph of the element by element power spectrum.
 %SAVES:
 % 1) B-mode image - Per acquisition
 % 2) Line plot of the spatial peak pressure - Single, Updates
 % 3) Line plot of the angle of a straight line - Single, Updates
 % 4) Graph of the power spectrum - Per acquisition
-%NOMENCLATURE: Run-'GUI Instance'-'The acquisition that was run'
+%NOMENCLATURE: FileName_Date_Run-'GUI Instance'-It-'The acquisition that was run'
 
 %SOURCE: This script is a modification of 3.0.4 SetUpLSS_14v128RyLns.
 % Notice: 
@@ -65,6 +63,8 @@ P.itNumber = 1; %What iteration on the current run?
 P.axialWindow = 40; %Window around the focus for the power spectrum, sized in wavelengths
 P.powerSpectra = [];
 P.psHandle = 1; 
+
+P.elNum = 1;
 
 %Start of verasonics script
 P.startDepth = 5;
@@ -119,22 +119,9 @@ Media.attenuation = -0.5;
 
 % Specify Matlab space needed for the raw RF data.
 Resource.RcvBuffer.datatype = 'int16';
-Resource.RcvBuffer.rowsPerFrame = 2*184320; % this should be larger than 128*Receive.endDepth*4 for max depth (doubled for 4X sampling)
+Resource.RcvBuffer.rowsPerFrame = 2*184320*128; % this should be larger than 128*Receive.endDepth*4 for max depth (doubled for 4X sampling)
 Resource.RcvBuffer.colsPerFrame = Resource.Parameters.numRcvChannels;
-Resource.RcvBuffer.numFrames = 10;
-Resource.InterBuffer(1).numFrames = 10;  % one intermediate buffer needed.
-Resource.ImageBuffer.numFrames = 50;
-Resource.DisplayWindow.Title = 'L22-14v128RyLns 4X sampling at 62.5 MHz';
-Resource.DisplayWindow.pdelta = 0.25;
-ScrnSize = get(0,'ScreenSize');
-DwWidth = ceil(PData(1).Size(2)*PData(1).PDelta(1)/Resource.DisplayWindow(1).pdelta);
-DwHeight = ceil(PData(1).Size(1)*PData(1).PDelta(3)/Resource.DisplayWindow(1).pdelta);
-Resource.DisplayWindow(1).Position = [250,(ScrnSize(4)-(DwHeight+150))/2, ...  % lower left corner position
-                                      DwWidth, DwHeight];
-Resource.DisplayWindow(1).ReferencePt = [PData(1).Origin(1),0,PData(1).Origin(3)];   % 2D imaging is in the X,Z plane
-Resource.DisplayWindow(1).numFrames = 20;
-Resource.DisplayWindow(1).AxesUnits = 'mm';
-Resource.DisplayWindow.Colormap = gray(256);
+Resource.RcvBuffer.numFrames = 128;
 
 %% Transmit and receive
 
@@ -192,6 +179,7 @@ BPF1 = [ -0.00009 -0.00128 +0.00104 +0.00085 +0.00159 +0.00244 -0.00955 ...
 % - We need P.numRays Receives for every frame.     
 maxAcqLength = sqrt(P.endDepth^2 + (Trans.numelements*Trans.spacing)^2) - P.startDepth;
 wlsPer128 = 128/(2*4); % wavelengths in 128 samples for 4 samplesPerWave
+
 Receive = repmat(struct('Apod', ones(1,Trans.numelements), ...
                         'startDepth', P.startDepth, ...
                         'endDepth', P.startDepth + wlsPer128*ceil(maxAcqLength/wlsPer128), ...
@@ -203,14 +191,14 @@ Receive = repmat(struct('Apod', ones(1,Trans.numelements), ...
                         'InputFilter', BPF1, ... 
                         'mode', 0, ...
                         'callMediaFunc', 0), 1, P.numRays*Resource.RcvBuffer(1).numFrames);
-% - Set event specific Receive attributes.
+                    
+% - Set event specific Receive attributes. % MODIFIED for element by
+% element apodization
 for i = 1:Resource.RcvBuffer(1).numFrames
-    k = P.numRays*(i-1);
-    Receive(k+1).callMediaFunc = 1;
-    for j = 1:P.numRays
-        Receive(k+j).framenum = i;
-        Receive(k+j).acqNum = j;
-    end
+        Receive(i).framenum = i;
+        apodization = zeros(1,P.numRays);
+        apodization(i) = 1;
+        Receive(i).Apod = apodization;
 end
 
 % Specify time gain control Waveform structure.
@@ -218,56 +206,14 @@ TGC.CntrlPts = [300,511,716,920,1023,1023,1023,1023]; %[0,138,260,287,385,593,67
 TGC.rangeMax = P.endDepth;
 TGC.Waveform = computeTGCWaveform(TGC);
 
-%% Image reconstruction
-% Specify reconstruction structure array. 
-Recon = struct('senscutoff', 0.6, ...
-               'pdatanum', 1, ...
-               'rcvBufFrame',-1, ...
-               'IntBufDest', [1,1], ...
-               'ImgBufDest', [1,-1], ...
-               'RINums', 1:P.numRays);
-
-% Define ReconInfo structures.
-ReconInfo = repmat(struct('mode', 0, ...  % replace intensity data
-                   'txnum', 1, ...
-                   'rcvnum', 1, ...
-                   'regionnum', 0), 1, P.numRays);
-% - Set specific ReconInfo attributes.
-for j = 1:P.numRays 
-    ReconInfo(j).txnum = j;
-    ReconInfo(j).rcvnum = j;
-    ReconInfo(j).regionnum = j;
-end
-
 %% Image processing
 % Specify Process structure array.
 pers = 20;
 
-
-Process(1).classname = 'Image';
-Process(1).method = 'imageDisplay';
-Process(1).Parameters = {'imgbufnum',1,...   % number of buffer to process.
-                         'framenum',-1,...   % (-1 => lastFrame)
-                         'pdatanum',1,...    % number of PData structure to use
-                         'pgain',1.0,...            % pgain is image processing gain
-                         'reject',2,...      % reject level 
-                         'persistMethod','simple',...
-                         'persistLevel',pers,...
-                         'interpMethod','4pt',...  %method of interp. (1=4pt)
-                         'grainRemoval','none',...
-                         'processMethod','none',...
-                         'averageMethod','none',...
-                         'compressMethod','power',...
-                         'compressFactor',40,...
-                         'mappingMethod','full',...
-                         'display',1,...      % display image after processing
-                         'displayWindow',1};
-                     
-
 % Specify an external processing event.
-Process(2).classname = 'External';
-Process(2).method = 'saveData';
-Process(2).Parameters = {'srcbuffer','inter',... % name of buffer to process.
+Process(1).classname = 'External';
+Process(1).method = 'saveData';
+Process(1).Parameters = {'srcbuffer','inter',... % name of buffer to process.
 'srcbufnum',1,...
 'srcframenum',1,...
 'dstbuffer','none'};
@@ -286,60 +232,63 @@ nsc = 5;
 
 % Specify event timeline.
 n = 1;
-for i = 1:Resource.RcvBuffer(1).numFrames
-    for j = 1:P.numRays                 % Acquire all ray lines for frame
-        Event(n).info = 'Acquire ray line';
-        Event(n).tx = j;         % use next TX structure.
-        Event(n).rcv = P.numRays*(i-1)+j;   
-        Event(n).recon = 0;      % no reconstruction.
-        Event(n).process = 0;    % no processing
-        Event(n).seqControl = 1; % seqCntrl
+for elNum = 1:128
+    for i = 1:Resource.RcvBuffer(1).numFrames
+        for j = 1:P.numRays                 % Acquire all ray lines for frame
+            Event(n).info = 'Acquire ray line';
+            Event(n).tx = j;         % use next TX structure.
+            Event(n).rcv = P.numRays*(i-1)+j;
+            Event(n).recon = 0;      % no reconstruction.
+            Event(n).process = 0;    % no processing
+            Event(n).seqControl = 1; % seqCntrl
+            n = n+1;
+        end
+        % Replace last events SeqControl with inter-frame timeToNextAcq and transfer to host.
+        Event(n-1).seqControl = [2,nsc];
+        SeqControl(nsc).command = 'transferToHost'; % transfer frame to host buffer
+        nsc = nsc+1;
+        
+        Event(n).info = 'recon and process';
+        Event(n).tx = 0;         % no transmit
+        Event(n).rcv = 0;        % no rcv
+        Event(n).recon = 1;      % reconstruction
+        Event(n).process = 0;    % process
+        if floor(i/4) == i/4     % Exit to Matlab every 4th frame reconstructed
+            Event(n).seqControl = 3;
+        else
+            Event(n).seqControl = 0;
+        end
         n = n+1;
     end
-    % Replace last events SeqControl with inter-frame timeToNextAcq and transfer to host.
-    Event(n-1).seqControl = [2,nsc];
-       SeqControl(nsc).command = 'transferToHost'; % transfer frame to host buffer
-       nsc = nsc+1;
-
-    Event(n).info = 'recon and process'; 
-    Event(n).tx = 0;         % no transmit
-    Event(n).rcv = 0;        % no rcv
-    Event(n).recon = 1;      % reconstruction
-    Event(n).process = 1;    % process  
-    if floor(i/4) == i/4     % Exit to Matlab every 4th frame reconstructed 
-        Event(n).seqControl = 3;
-    else
-        Event(n).seqControl = 0;
-    end
-    n = n+1;
-end
-Event(n).info = 'Sync hardware and software';
-Event(n).tx = 0;
-Event(n).rcv = 0;
-Event(n).recon = 0;
-Event(n).process = 0;
-Event(n).seqControl = nsc;
-
-SeqControl(nsc).command = 'sync';
-
-n = n + 1;
-
-%if P.saveAcquisition == 1
+    Event(n).info = 'Sync hardware and software';
+    Event(n).tx = 0;
+    Event(n).rcv = 0;
+    Event(n).recon = 0;
+    Event(n).process = 0;
+    Event(n).seqControl = nsc;
+    
+    SeqControl(nsc).command = 'sync';
+    
+    n = n + 1;
+    
     Event(n).info = 'Save image data';
     Event(n).tx = 0;
     Event(n).rcv = 0;
     Event(n).recon = 0;
     Event(n).process = 2;
     Event(n).seqControl = 0;
-%end
+    
+    n = n+1;
+    
+    %This is the code to continuously repeat the acquisition
+    %Event(n).info = 'Jump back';
+    %Event(n).tx = 0;        % no TX
+    %Event(n).rcv = 0;       % no Rcv
+    %Event(n).recon = 0;     % no Recon
+    %Event(n).process = 0;
+    %Event(n).seqControl = 4;
 
-%This is the code to continuously repeat the acquisition
-%Event(n).info = 'Jump back';
-%Event(n).tx = 0;        % no TX
-%Event(n).rcv = 0;       % no Rcv
-%Event(n).recon = 0;     % no Recon
-%Event(n).process = 0; 
-%Event(n).seqControl = 4;
+end
 
 %% UI and EF declaration
 % - Sensitivity Cutoff
