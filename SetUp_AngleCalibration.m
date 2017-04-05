@@ -69,6 +69,7 @@ P.powerSpectra = [];
 
 P.maxRF = []; %A list of the peak RF signal in the current run
 P.angles = []; %A list of the angles from the optical flat in the current run
+P.angLoc = [];
 
 P.psHandle = 1;
 P.rfHandle = []; %Handle for the RF figure
@@ -90,7 +91,7 @@ Resource.Parameters.numTransmit = 128;  % number of transmit channels.
 Resource.Parameters.numRcvChannels = 128;  % number of receive channels.
 Resource.Parameters.speedOfSound = 1540;
 Resource.Parameters.speedCorrectionFactor = 1.0;
-Resource.Parameters.simulateMode = 1;  
+Resource.Parameters.simulateMode = 0;  
 %  Resource.Parameters.simulateMode = 1 forces simulate mode, even if hardware is present.
 %  Resource.Parameters.simulateMode = 2 stops sequence and processes RcvData continuously.
 
@@ -625,8 +626,8 @@ saveData(IQData)
        PData = evalin('base','PData');
        
        %STEP2: Create position vectors for each pixel in mm
-       LateralPosition = (0:(PData.Size(2)-1))*(PData.PDelta(1)*P.wls2mm) + PData.Origin(1); 
-       AxialPosition = (0:(PData.Size(1)-1))*(PData.PDelta(3)*P.wls2mm) + PData.Origin(3);
+       LateralPosition = (0:(PData.Size(2)-1))*(PData.PDelta(1)*P.wls2mm) + PData.Origin(1)*P.wls2mm; 
+       AxialPosition = (0:(PData.Size(1)-1))*(PData.PDelta(3)*P.wls2mm) + PData.Origin(3)*P.wls2mm;
        
         figure('Visible','off')
         imagesc(LateralPosition,AxialPosition,log10(abs(IQData)+1));
@@ -678,16 +679,17 @@ saveData(IQData)
         %% Update the RF max and angle vectors
         
         maxRF = max(max(abs(RF)));
-        
-       [lMax, lLoc] = max(abs(RF(1,:)));
-       [rMax, rLoc] = max(abs(RF(PData.Size(2),:)));
+
+       [lMax, angLoc.left] = max(abs(RF(5,:)));
+       [rMax, angLoc.right] = max(abs(RF(PData.Size(2)-4,:)));
         
         %Calculate the new angle from the leftmost and rightmost columns
-        newAngle = atand(((lLoc-rLoc)*PData.PDelta(3))/(PData.Size(2)*PData.PDelta(1)));
+        newAngle = atand(((angLoc.right-angLoc.left)*PData.PDelta(3))/(PData.Size(2)*PData.PDelta(1)));
+        
         
         P.maxRF = [P.maxRF maxRF];
         P.angles = [P.angles newAngle];
-        
+        P.loc = [P.angLoc angLoc];
         
         %File name for the calibration data
         calFileName = strcat(P.path,P.filePrefix,P.dateStr,...
@@ -697,6 +699,7 @@ saveData(IQData)
         C.maxRF = P.maxRF;
         C.angles = P.angles;
         C.powerSpectra = P.powerSpectra;
+        C.loc = P.loc;
         save(calFileName,'C')
         
         %% Display the RF and angles in figures
@@ -750,7 +753,7 @@ saveData(IQData)
             figure(P.angleHandle)
             set(figure(P.angleHandle),'Name',strcat('Run-',num2str(P.runNumber)),'NumberTitle','off')
             angleGraph = axes('XLim',[0,(P.itNumber+1)],...
-                'YLim', [-10, 10],...
+                'YLim', [-45, 45],...
                 'NextPlot','replaceChildren');
             plot(angleGraph,x,P.angles,'-o')
             title('Optical Flat Angle')
