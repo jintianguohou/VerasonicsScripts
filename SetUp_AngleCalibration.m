@@ -684,7 +684,8 @@ saveData(IQData)
        [rMax, angLoc.right] = max(abs(RF(PData.Size(2)-4,:)));
         
         %Calculate the new angle from the leftmost and rightmost columns
-        newAngle = atand(((angLoc.right-angLoc.left)*PData.PDelta(3))/(PData.Size(2)*PData.PDelta(1)));
+        newAngle = atand(((angLoc.right-angLoc.left)*PData.PDelta(3))...
+            /(PData.Size(2)*PData.PDelta(1)));
         
         
         P.maxRF = [P.maxRF maxRF];
