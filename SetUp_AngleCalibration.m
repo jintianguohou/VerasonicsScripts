@@ -637,7 +637,6 @@ saveData(IQData)
         xlabel('Width (mm)','FontSize',16);
         ylabel('Depth (mm)','Fontsize',16);
         saveas(gcf, strcat(fileName,'_BMode'),'png'); 
-        %saveas(gcf, strcat(fileName,'_BMode')); %Uncomment this line to save the actual figure 
         
         %% Calculate and save the RF
         
@@ -671,9 +670,12 @@ saveData(IQData)
             halfAxWindow = PData.Size(1)-focusIdx;
         end
         
+        lowBound = focusIdx-halfAxWindow;
+        upBound = focusIdx+halfAxWindow;
+        
         [E, V] = dpss(2*halfAxWindow+1,1);
         [powerSpectrum, C.frequencies] = PowerSpectrumMTF2(...
-            RF((focusIdx-halfAxWindow):(focusIdx+halfAxWindow),:), E,V,4*Trans.frequency);
+            RF(lowBound:upBound,:), E,V,4*Trans.frequency);
         P.powerSpectra = [P.powerSpectra powerSpectrum];
         
         %% Update the RF max and angle vectors

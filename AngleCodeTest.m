@@ -33,16 +33,18 @@ P = evalin('base','P');
 %save(strcat(fileName,'_IQ'),'IQData'); %Save the IQ data
 
 %% Save the B-mode image
-%STEP 1: Call in variables needed to define axes and position
+%Call in variables needed to define axes and position
 Trans = evalin('base','Trans');
 PData = evalin('base','PData');
 
-%STEP2: Create position vectors for each pixel in mm
+BMode = log10(abs(IQData)+1);
+
+%Create position vectors for each pixel in mm
 LateralPosition = (0:(PData.Size(2)-1))*(PData.PDelta(1)*P.wls2mm) + PData.Origin(1)*P.wls2mm;
 AxialPosition = (0:(PData.Size(1)-1))*(PData.PDelta(3)*P.wls2mm) + PData.Origin(3)*P.wls2mm;
 
 figure('Visible','off')
-imagesc(LateralPosition,AxialPosition,log10(abs(IQData)+1));
+imagesc(LateralPosition,AxialPosition,BMode);
 colormap(gray);
 axis 'equal';
 axis 'tight';
@@ -71,38 +73,64 @@ RF=real(IQData).*cosmod - imag(IQData).*sinmod;
 %save(strcat(fileName,'_RF'),'RF','LateralPosition','AxialPosition');
 
 %% Calculate the power spectrum
-%         halfAxWindow = int16(0.5*P.axialWindow/PData.PDelta(3)); %Axial window in pixels.
-%         focusIdx = int16(P.txFocus/PData.PDelta(3)); % location of the tx focus in the array
-%
-%         %Make sure the window is possible
-%         if (focusIdx-halfAxWindow) < 1 %Check that the window stops at the lower bound
-%             halfAxWindow = focusIdx - 1;
-%         end
-%
-%         if (focusIdx + halfAxWindow) > PData.Size(1) %Check that the window stops at the upper bound
-%             halfAxWindow = PData.Size(1)-focusIdx;
-%         end
-%
+        halfAxWindow = int16(0.5*P.axialWindow/PData.PDelta(3)); %Axial window in pixels.
+        focusIdx = int16(P.txFocus/PData.PDelta(3)); % location of the tx focus in the array
+
+        %Make sure the window is possible
+        if (focusIdx-halfAxWindow) < 1 %Check that the window stops at the lower bound
+            halfAxWindow = focusIdx - 1;
+        end
+
+        if (focusIdx + halfAxWindow) > PData.Size(1) %Check that the window stops at the upper bound
+            halfAxWindow = PData.Size(1)-focusIdx;
+        end
+        
+        lowBound = focusIdx-halfAxWindow;
+        upBound = focusIdx+halfAxWindow;
 %         [E, V] = dpss(2*halfAxWindow+1,1);
 %         [powerSpectrum, C.frequencies] = PowerSpectrumMTF2(...
-%             RF((focusIdx-halfAxWindow):(focusIdx+halfAxWindow),:), E,V,4*Trans.frequency);
+%             RF(lowBound:upBound,:), E,V,4*Trans.frequency);
 %         P.powerSpectra = [P.powerSpectra powerSpectrum];
-%
-%         %% Update the RF max and angle vectors
-%
-%         maxRF = max(max(abs(RF)));
-%
-%        [lMax, angLoc.left] = max(abs(RF(5,:)));
-%        [rMax, angLoc.right] = max(abs(RF(PData.Size(2)-4,:)));
-%
-    %% Calculate the new angle and maxRF
-%newAngle = atand(((angLoc.right-angLoc.left)*PData.PDelta(3))/(PData.Size(2)*PData.PDelta(1)));
-newAngle = 0;
 
+        maxRF = max(max(abs(RF)));
 
+%% Calculate the new angle and maxRF
+       %[lMax, angLoc.left] = max(abs(RF(5,:)));
+       %[rMax, angLoc.right] = max(abs(RF(PData.Size(2)-4,:)));
+       %newAngle = atand(((angLoc.right-angLoc.left)*PData.PDelta(3))/(PData.Size(2)*PData.PDelta(1)));
+    angleList = [];
+    n = 0;
+    locList = zeros(1,PData.Size(2));
+    
+    BMode2 = 
+    
+    for ray = 1:PData.Size(2)
+        for idx = lowBound:upBound
+            if RF(idx, ray) > 0.0001*maxRF
+                locList(ray) = idx;
+                break;
+            end
+        end
+    end
+    
+    for left = l:(PData.Size(2)-25)
+        if maxList(left) > 0.0001*maxRF;
+            for right = (left+25):PData.Size(2);
+                if maxList(right) > 0.0001*maxRF;
+                    n = n + 1;
+                    angleList(n) = atand(...
+                        (((locList(right)-locList(left)*PData.PDelta(3))...
+                        /((right-left)*PData.PDelta(1)))));
+                    
+                end
+            end
+        end
+    end
+
+    newAngle = mean(angleList)
 %
 %         P.maxRF = [P.maxRF maxRF];
-P.angles = [P.angles newAngle];
+   P.angles = [P.angles newAngle];
 %         P.loc = [P.angLoc angLoc];
 %
 %         %File name for the calibration data
