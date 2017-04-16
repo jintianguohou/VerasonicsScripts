@@ -18,7 +18,7 @@ figure;imshow(imdata);
 P = houghpeaks(H,4,'Threshold',.3*max(H(:)));
 % Find the actual lines
 lines = houghlines(imdata,T,R,P,'FillGap',50,'MinLength',50);
-lines.theta
+lines.theta;
 
 %% display
 figure, imshow(imdata), hold on

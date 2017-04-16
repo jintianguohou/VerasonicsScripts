@@ -678,18 +678,32 @@ saveData(IQData)
             RF(lowBound:upBound,:), E,V,4*Trans.frequency);
         P.powerSpectra = [P.powerSpectra powerSpectrum];
         
-        %% Update the RF max and angle vectors
+        %% Find RF max and lines
         
         maxRF = max(max(abs(RF)));
+        
+        GrayImg = mat2gray(abs(RF(lowBound:upBound,:)));
+        
+        %Find the lines in the image
+        imdata=im2bw(GrayImg,0.01);
+        figure;imshow(imdata);
 
-       [lMax, angLoc.left] = max(abs(RF(5,:)));
-       [rMax, angLoc.right] = max(abs(RF(PData.Size(2)-4,:)));
+        %'Skeletonize' the image.
+        imdata=bwmorph(imdata,'skel', inf);
+        figure;imshow(imdata);
+
+        %help hough
+        [H,T,R] = hough(imdata);
+        %Given image has about 4 lines of interest
+        P = houghpeaks(H,4,'Threshold',.3*max(H(:)));
+        % Find the actual lines
+        lines = houghlines(imdata,T,R,P,'FillGap',50,'MinLength',50);
+        lines.theta;
         
-        %Calculate the new angle from the leftmost and rightmost columns
-        newAngle = atand(((angLoc.right-angLoc.left)*PData.PDelta(3))...
-            /(PData.Size(2)*PData.PDelta(1)));
         
         
+        
+        %% Update RF max and angle vectors
         P.maxRF = [P.maxRF maxRF];
         P.angles = [P.angles newAngle];
         P.loc = [P.angLoc angLoc];
