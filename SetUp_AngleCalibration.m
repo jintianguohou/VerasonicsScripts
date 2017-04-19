@@ -569,6 +569,11 @@ if P.saveAcquisition
     userInput = inputdlg(prompt,dlgTitle,numLines,defaultAns);
     P.filePrefix = userInput{1};
     
+    %Update the date
+    P.time = clock;
+    P.dateStr = strcat('_',num2str(P.time(2)), '-', num2str(P.time(3)), '-',...
+        num2str(P.time(1)));
+    
     %Assign a new directory
     P.path = strcat(uigetdir(P.path),'/');
 else
@@ -685,7 +690,7 @@ saveData(IQData)
         GrayImg = mat2gray(abs(RF(lowBound:upBound,:)));
         
         %Find the lines in the image
-        imdata=im2bw(GrayImg,0.01);
+        imdata=im2bw(GrayImg,0.5);
         figure;imshow(imdata);
 
         %'Skeletonize' the image.
@@ -770,7 +775,7 @@ saveData(IQData)
             figure(P.angleHandle)
             set(figure(P.angleHandle),'Name',strcat('Run-',num2str(P.runNumber)),'NumberTitle','off')
             angleGraph = axes('XLim',[0,(P.itNumber+1)],...
-                'YLim', [-45, 45],...
+                'YLim', [-5, 5],...
                 'NextPlot','replaceChildren');
             plot(angleGraph,x,P.angles,'-o')
             title('Optical Flat Angle')
