@@ -69,11 +69,11 @@ P.powerSpectra = [];
 
 P.maxRF = []; %A list of the peak RF signal in the current run
 P.angles = []; %A list of the angles from the optical flat in the current run
-P.angLoc = [];
 
 P.psHandle = 1;
 P.rfHandle = []; %Handle for the RF figure
 P.angleHandle = []; %Handle for the angle figure
+P.angleDisplayHandle = [];%Handle for displaying the angles on the current figure
 
 %Start of verasonics script
 P.startDepth = 5;
@@ -633,9 +633,10 @@ saveData(IQData)
        %STEP2: Create position vectors for each pixel in mm
        LateralPosition = (0:(PData.Size(2)-1))*(PData.PDelta(1)*P.wls2mm) + PData.Origin(1)*P.wls2mm; 
        AxialPosition = (0:(PData.Size(1)-1))*(PData.PDelta(3)*P.wls2mm) + PData.Origin(3)*P.wls2mm;
+       BMode = 10*log10(abs(IQData)+1);
        
         figure('Visible','off')
-        imagesc(LateralPosition,AxialPosition,log10(abs(IQData)+1));
+        imagesc(LateralPosition,AxialPosition,BMode);
         colormap(gray);
         axis 'equal';
         axis 'tight';
@@ -691,52 +692,61 @@ saveData(IQData)
         
         %Get the raw image data.  Commented out, but would take the place
         %of im2bw in the next line if we do declare it here
-        %GrayImg = mat2gray(log10(abs(IQData(lowBound:upBound,:))+1));
+%         GrayImg = mat2gray(BMode);
         %imdata=im2bw(GrayImg,0.8);
 
         %'Skeletonize' the image.
-        imdata=bwmorph(im2bw(mat2gray(log10(abs(IQData(lowBound:upBound,:))+1)),...
+        imdata=bwmorph(im2bw(mat2gray(BMode),...
             0.8),'skel', inf);
-        figure;imshow(imdata);
+        %figure;imshow(imdata);
 
         %Get the lines through the hough transform
         imdata=imdata';
         [H,T,R] = hough(imdata,'Theta',-5:0.01:5);
         %Given image has about 4 lines of interest
-        P = houghpeaks(H,4,'Threshold',.3*max(H(:)));
+        Peaks = houghpeaks(H,4,'Threshold',.3*max(H(:)));
         % Find the actual lines
-        lines = houghlines(imdata,T,R,P,'FillGap',50,'MinLength',50);
+        lines = houghlines(imdata,T,R,Peaks,'FillGap',50,'MinLength',50);
         lines.theta;
         
         %% display
         imdata=imdata';
-        figure, imshow(imdata), hold on
+%         figure, imshow(imdata), hold on
         max_len = 0;
         xy_long = [];
+        longLine = [];
         for k = 1:length(lines)
             xy = [lines(k).point1(2) lines(k).point1(1);...
                 lines(k).point2(2) lines(k).point2(1)];
-            plot(xy(:,1),xy(:,2),'LineWidth',2,'Color','green');
-            
-            % Plot beginnings and ends of lines
-            plot(xy(1,1),xy(1,2),'x','LineWidth',2,'Color','yellow');
-            plot(xy(2,1),xy(2,2),'x','LineWidth',2,'Color','red');
+%             plot(xy(:,1),xy(:,2),'LineWidth',2,'Color','green');
+%             
+%             % Plot beginnings and ends of lines
+%             plot(xy(1,1),xy(1,2),'x','LineWidth',2,'Color','yellow');
+%             plot(xy(2,1),xy(2,2),'x','LineWidth',2,'Color','red');
             
             % Determine the endpoints of the longest line segment
             len = norm(lines(k).point1 - lines(k).point2);
             if ( len > max_len)
                 max_len = len;
                 xy_long = xy;
+                longLine = k;
             end
         end
         
         % highlight the longest line segment
-        plot(xy_long(:,1),xy_long(:,2),'LineWidth',2,'Color','blue');
+%         plot(xy_long(:,1),xy_long(:,2),'LineWidth',2,'Color','blue');
 
+        newAngle = lines(longLine).theta;
+        
+        %Get the line for what it would be on the full image, and not just
+        %the window
+        xy_long_fullGraph = xy_long;
+        xy_long_fullGraph(1,2) = xy_long_fullGraph(1,2)+lowBound-1;
+        xy_long_fullGraph(2,2) = xy_long_fullGraph(2,2)+lowBound-1;
+        
         %% Update RF max and angle vectors
         P.maxRF = [P.maxRF maxRF];
         P.angles = [P.angles newAngle];
-        P.loc = [P.angLoc angLoc];
         
         %File name for the calibration data
         calFileName = strcat(P.path,P.filePrefix,P.dateStr,...
@@ -746,13 +756,13 @@ saveData(IQData)
         C.maxRF = P.maxRF;
         C.angles = P.angles;
         C.powerSpectra = P.powerSpectra;
-        C.loc = P.loc;
         save(calFileName,'C')
         
         %% Display the RF and angles in figures
         %We need persistents so that they stay open
         persistent rfGraph;
         persistent angleGraph;
+        persistent angleDisplayGraph;
         persistent psGraph;
 
         %X vector for the graphs based on the number of iterations
@@ -792,7 +802,7 @@ saveData(IQData)
             ylabel('RF Signal')
             drawnow
             
-            %Optical flat angle graph
+            %Optical flat angle record graph
             P.angleHandle = P.rfHandle+1;
             while ishandle(P.angleHandle) && strcmp(get(P.angleHandle,'type'),'figure')
                 P.angleHandle = P.angleHandle+1;
@@ -803,11 +813,30 @@ saveData(IQData)
                 'YLim', [-5, 5],...
                 'NextPlot','replaceChildren');
             plot(angleGraph,x,P.angles,'-o')
-            title('Optical Flat Angle')
+            title('Optical Flat Angle Record')
             xlabel('Iteration')
             ylabel('Angle')
+            drawnow
+            
+            %Image of the angle being used in the angle calculations
+            P.angleDisplayHandle = P.angleHandle+1;
+            while ishandle(P.angleDisplayHandle) && strcmp(get(P.angleDisplayHandle,'type'),'figure')
+                P.angleDisplayHandle = P.angleDisplayHandle+1;
+            end
+            figure(P.angleDisplayHandle)
+            set(figure(P.angleDisplayHandle),'Name',strcat('Run-',num2str(P.runNumber)),'NumberTitle','off')
+            angleDisplayGraph = axes('XLim',[min(LateralPosition), max(LateralPosition)],...
+                'YLim', [max(AxialPosition)*-1, min(AxialPosition)*-1],...
+                'NextPlot','replaceChildren');
+            imagesc(BMode), hold on;
+            plot(xy_long_fullGraph(:,1),xy_long_fullGraph(:,2),'LineWidth',2,'Color','blue');
+            hold off
+            title('Optical Flat Angle')
+            xlabel('Width (mm)')
+            ylabel('Depth (mm)')
 
             drawnow
+            
         else
             %Update the power spectrum figure
             figure(P.psHandle)
@@ -820,11 +849,18 @@ saveData(IQData)
             plot(rfGraph,x,C.maxRF,'-o')
             drawnow
             
-            %Update the Angle line plot
+            %Update the Angle record plot
             figure(P.angleHandle)
             set(angleGraph,'XLim',[0 P.itNumber+1]);
             plot(angleGraph,x,C.angles,'-o')
             drawnow
+            
+            %Update the Angle display plot
+            figure(P.angleHandle)
+            imagesc(BMode), hold on;
+            plot(xy_long_fullGraph(:,1),xy_long_fullGraph(:,2),'LineWidth',2,'Color','blue');
+            hold off
+
         end
         
         %Save the power spectrum
