@@ -683,31 +683,56 @@ saveData(IQData)
             RF(lowBound:upBound,:), E,V,4*Trans.frequency);
         P.powerSpectra = [P.powerSpectra powerSpectrum];
         
-        %% Find RF max and lines
+        %% Find RF max and lines in the image
         
         maxRF = max(max(abs(RF)));
         
-        GrayImg = mat2gray(abs(RF(lowBound:upBound,:)));
         
-        %Find the lines in the image
-        imdata=im2bw(GrayImg,0.5);
-        figure;imshow(imdata);
+        
+        %Get the raw image data.  Commented out, but would take the place
+        %of im2bw in the next line if we do declare it here
+        %GrayImg = mat2gray(log10(abs(IQData(lowBound:upBound,:))+1));
+        %imdata=im2bw(GrayImg,0.8);
 
         %'Skeletonize' the image.
-        imdata=bwmorph(imdata,'skel', inf);
+        imdata=bwmorph(im2bw(mat2gray(log10(abs(IQData(lowBound:upBound,:))+1)),...
+            0.8),'skel', inf);
         figure;imshow(imdata);
 
-        %help hough
-        [H,T,R] = hough(imdata);
+        %Get the lines through the hough transform
+        imdata=imdata';
+        [H,T,R] = hough(imdata,'Theta',-5:0.01:5);
         %Given image has about 4 lines of interest
         P = houghpeaks(H,4,'Threshold',.3*max(H(:)));
         % Find the actual lines
         lines = houghlines(imdata,T,R,P,'FillGap',50,'MinLength',50);
         lines.theta;
         
+        %% display
+        imdata=imdata';
+        figure, imshow(imdata), hold on
+        max_len = 0;
+        xy_long = [];
+        for k = 1:length(lines)
+            xy = [lines(k).point1(2) lines(k).point1(1);...
+                lines(k).point2(2) lines(k).point2(1)];
+            plot(xy(:,1),xy(:,2),'LineWidth',2,'Color','green');
+            
+            % Plot beginnings and ends of lines
+            plot(xy(1,1),xy(1,2),'x','LineWidth',2,'Color','yellow');
+            plot(xy(2,1),xy(2,2),'x','LineWidth',2,'Color','red');
+            
+            % Determine the endpoints of the longest line segment
+            len = norm(lines(k).point1 - lines(k).point2);
+            if ( len > max_len)
+                max_len = len;
+                xy_long = xy;
+            end
+        end
         
-        
-        
+        % highlight the longest line segment
+        plot(xy_long(:,1),xy_long(:,2),'LineWidth',2,'Color','blue');
+
         %% Update RF max and angle vectors
         P.maxRF = [P.maxRF maxRF];
         P.angles = [P.angles newAngle];

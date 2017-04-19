@@ -5,7 +5,7 @@ function lines = findLines(GrayImg)
 %imtool(imdata);
 
 %threshold only the red layer to get a black/white image
-imdata=im2bw(GrayImg,0.01);
+imdata=im2bw(GrayImg,0.8);
 figure;imshow(imdata);
 
 %'Skeletonize' the image.
