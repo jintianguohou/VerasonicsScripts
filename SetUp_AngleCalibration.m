@@ -696,7 +696,7 @@ saveData(IQData)
         %imdata=im2bw(GrayImg,0.8);
 
         %'Skeletonize' the image.
-        imdata=bwmorph(im2bw(mat2gray(BMode),...
+        imdata=bwmorph(im2bw(mat2gray(BMode(lowBound:upBound,:)),...
             0.8),'skel', inf);
         %figure;imshow(imdata);
 
@@ -739,10 +739,10 @@ saveData(IQData)
         newAngle = lines(longLine).theta;
         
         %Get the line for what it would be on the full image, and not just
-        %the window
-        xy_long_fullGraph = xy_long;
-        xy_long_fullGraph(1,2) = xy_long_fullGraph(1,2)+lowBound-1;
-        xy_long_fullGraph(2,2) = xy_long_fullGraph(2,2)+lowBound-1;
+%         %the window
+        xy_full = xy_long';
+        xy_full(2,1) = xy_full(2,1)+lowBound-1;
+        xy_full(2,2) = xy_full(2,2)+lowBound-1;
         
         %% Update RF max and angle vectors
         P.maxRF = [P.maxRF maxRF];
@@ -810,7 +810,7 @@ saveData(IQData)
             figure(P.angleHandle)
             set(figure(P.angleHandle),'Name',strcat('Run-',num2str(P.runNumber)),'NumberTitle','off')
             angleGraph = axes('XLim',[0,(P.itNumber+1)],...
-                'YLim', [-5, 5],...
+                'YLim', [-2, 2],...
                 'NextPlot','replaceChildren');
             plot(angleGraph,x,P.angles,'-o')
             title('Optical Flat Angle Record')
@@ -824,17 +824,17 @@ saveData(IQData)
                 P.angleDisplayHandle = P.angleDisplayHandle+1;
             end
             figure(P.angleDisplayHandle)
-            set(figure(P.angleDisplayHandle),'Name',strcat('Run-',num2str(P.runNumber)),'NumberTitle','off')
-            angleDisplayGraph = axes('XLim',[min(LateralPosition), max(LateralPosition)],...
-                'YLim', [max(AxialPosition)*-1, min(AxialPosition)*-1],...
-                'NextPlot','replaceChildren');
-            imagesc(BMode), hold on;
-            plot(xy_long_fullGraph(:,1),xy_long_fullGraph(:,2),'LineWidth',2,'Color','blue');
-            hold off
+            set(figure(P.angleDisplayHandle),'Name',strcat('Run-',num2str(P.runNumber)...
+                ,'_It-',num2str(P.itNumber)),'NumberTitle','off')
+%             angleDisplayGraph = axes('XLim',[min(LateralPosition), max(LateralPosition)],...
+%                 'YLim', [max(AxialPosition)*-1, min(AxialPosition)*-1],...
+%                 'NextPlot','replaceChildren');
+            imagesc(LateralPosition,AxialPosition,BMode)
+            colormap(gray)
+            line([LateralPosition(xy_full(1,1)) LateralPosition(xy_full(1,2))], [AxialPosition(xy_full(2,1)) AxialPosition(xy_full(2,2))])
             title('Optical Flat Angle')
             xlabel('Width (mm)')
             ylabel('Depth (mm)')
-
             drawnow
             
         else
@@ -856,10 +856,11 @@ saveData(IQData)
             drawnow
             
             %Update the Angle display plot
-            figure(P.angleHandle)
-            imagesc(BMode), hold on;
-            plot(xy_long_fullGraph(:,1),xy_long_fullGraph(:,2),'LineWidth',2,'Color','blue');
-            hold off
+            figure(P.angleDisplayHandle)
+            imagesc(LateralPosition,AxialPosition,BMode)
+            colormap(gray)
+            line([LateralPosition(xy_full(1,1)) LateralPosition(xy_full(1,2))], [AxialPosition(xy_full(2,1)) AxialPosition(xy_full(2,2))])
+            drawnow
 
         end
         
@@ -872,6 +873,8 @@ saveData(IQData)
         
         angleName = strcat(P.path,P.filePrefix,P.dateStr,...
             '_Run-',int2str(P.runNumber),'_angleGraph');
+        
+        saveas(figure(P.angleDisplayHandle),strcat(fileName,'_AngleOverlay'),'png')
         
         saveas(figure(P.rfHandle),rfName,'png')
         saveas(figure(P.angleHandle),angleName,'png')
